@@ -947,17 +947,27 @@ function BusinessContent() {
                                 </div>
 
                                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                                    <div className="flex items-center gap-2 bg-[#F8F9FB] dark:bg-[#191d24] px-3 py-1.5 rounded-xl w-full sm:w-56">
-                                        <SearchNormal1 size={14} color={isDark ? "#848e9c" : "gray"} />
+                                    <div className="flex items-center gap-2 bg-white dark:bg-[#191d24] px-3.5 py-2 rounded-xl w-full sm:w-60 border border-gray-200/90 dark:border-white/10 shadow-xs hover:border-gray-300 dark:hover:border-white/20 focus-within:border-[#0072ED] dark:focus-within:border-[#FCD535] focus-within:ring-2 focus-within:ring-[#0072ED]/15 dark:focus-within:ring-[#FCD535]/15 transition-all">
+                                        <SearchNormal1 size={14} color={isDark ? "#848e9c" : "#64748b"} className="shrink-0" />
                                         <input
                                             type="text"
                                             placeholder="Search 0x address..."
                                             value={directsSearch}
                                             onChange={(e) => setDirectsSearch(e.target.value)}
-                                            className="bg-transparent text-xs text-[var(--text-main)] outline-none w-full placeholder:text-gray-400 font-medium"
+                                            className="bg-transparent text-xs text-[var(--text-main)] outline-none w-full placeholder:text-gray-400 dark:placeholder:text-[#848e9c] font-medium"
                                         />
+                                        {directsSearch && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setDirectsSearch("")}
+                                                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer shrink-0"
+                                                title="Clear search"
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
                                     </div>
-                                    <span className="text-xs text-[var(--text-muted)] bg-gray-100 dark:bg-[#191d24] px-3 py-1.5 rounded-xl font-medium shrink-0">
+                                    <span className="text-xs text-[var(--text-muted)] bg-gray-100 dark:bg-[#191d24] px-3 py-2 rounded-xl font-medium shrink-0 border border-gray-200/50 dark:border-white/5">
                                         {filteredDirects.length} {filteredDirects.length === 1 ? "Partner" : "Partners"}
                                     </span>
                                 </div>
@@ -1104,37 +1114,54 @@ function BusinessContent() {
                             <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
                                 <div className="flex items-center gap-2">
                                     <span className="text-xs text-[var(--text-soft)] font-medium shrink-0">Depth:</span>
-                                    <select
-                                        value={depth}
-                                        onChange={(e) => {
-                                            const newDepth = e.target.value;
-                                            setDepth(newDepth);
-                                            startDownlineScan(newDepth);
-                                        }}
-                                        className="bg-[#F8F9FB] dark:bg-[#191d24] rounded-xl px-3 py-1.5 text-xs text-[var(--text-main)] outline-none font-medium border-none cursor-pointer"
-                                    >
-                                        {[1, 2, 3, 5, 10, 20, 30, 40].map((d) => (
-                                            <option key={d} value={d}>
-                                                L1 to {d}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div className="relative flex items-center">
+                                        <select
+                                            value={depth}
+                                            onChange={(e) => {
+                                                const newDepth = e.target.value;
+                                                setDepth(newDepth);
+                                                startDownlineScan(newDepth);
+                                            }}
+                                            className="bg-white dark:bg-[#191d24] border border-gray-200/90 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 focus:border-[#0072ED] dark:focus:border-[#FCD535] focus:ring-2 focus:ring-[#0072ED]/15 dark:focus:ring-[#FCD535]/15 rounded-xl px-3 py-2 pr-7 text-xs text-[var(--text-main)] outline-none font-medium shadow-xs transition-all cursor-pointer appearance-none"
+                                        >
+                                            {[1, 2, 3, 5, 10, 20, 30, 40].map((d) => (
+                                                <option key={d} value={d}>
+                                                    L1 to {d}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <span className="absolute right-2.5 pointer-events-none text-[9px] text-gray-400 dark:text-gray-500">
+                                            ▼
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <button
                                     type="button"
                                     onClick={() => startDownlineScan()}
                                     disabled={isScanning}
-                                    className="px-4 py-1.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs font-semibold transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                                    className="px-4 py-2 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs font-semibold shadow-xs hover:shadow-sm active:scale-[0.98] transition-all cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1.5"
                                 >
-                                    {isScanning ? "Scanning..." : isSyncingLive ? "Syncing..." : "Scan Tree"}
+                                    {isScanning ? (
+                                        <>
+                                            <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                                            <span>Scanning...</span>
+                                        </>
+                                    ) : isSyncingLive ? (
+                                        <>
+                                            <span className="inline-block w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+                                            <span>Syncing...</span>
+                                        </>
+                                    ) : (
+                                        "Scan Tree"
+                                    )}
                                 </button>
                             </div>
 
                             <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
                                 {/* Search by Inputting Level */}
-                                <div className="flex items-center gap-1.5 bg-[#F8F9FB] dark:bg-[#191d24] px-3 py-1.5 rounded-xl w-full sm:w-36 border border-transparent focus-within:border-[#0072ED]/30 dark:focus-within:border-[#FCD535]/30 transition-all">
-                                    <span className="text-[11px] font-semibold text-[#0072ED] dark:text-[#FCD535] shrink-0 font-mono">
+                                <div className="flex items-center gap-2 bg-white dark:bg-[#191d24] px-3.5 py-2 rounded-xl w-full sm:w-40 border border-gray-200/90 dark:border-white/10 shadow-xs hover:border-gray-300 dark:hover:border-white/20 focus-within:border-[#0072ED] dark:focus-within:border-[#FCD535] focus-within:ring-2 focus-within:ring-[#0072ED]/15 dark:focus-within:ring-[#FCD535]/15 transition-all">
+                                    <span className="text-[11px] font-semibold text-[#0072ED] dark:text-[#FCD535] shrink-0 font-mono select-none">
                                         Level:
                                     </span>
                                     <input
@@ -1169,7 +1196,7 @@ function BusinessContent() {
                                                 }
                                             }
                                         }}
-                                        className="bg-transparent text-xs text-[var(--text-main)] outline-none w-full placeholder:text-gray-400 font-mono font-medium"
+                                        className="bg-transparent text-xs text-[var(--text-main)] outline-none w-full placeholder:text-gray-400 dark:placeholder:text-[#848e9c] font-mono font-medium"
                                     />
                                     {searchLevel && (
                                         <button
@@ -1184,14 +1211,14 @@ function BusinessContent() {
                                 </div>
 
                                 {/* Filter by 0x address */}
-                                <div className="flex items-center gap-2 bg-[#F8F9FB] dark:bg-[#191d24] px-3 py-1.5 rounded-xl w-full sm:w-56 border border-transparent focus-within:border-[#0072ED]/30 dark:focus-within:border-[#FCD535]/30 transition-all">
-                                    <SearchNormal1 size={14} color={isDark ? "#848e9c" : "gray"} />
+                                <div className="flex items-center gap-2 bg-white dark:bg-[#191d24] px-3.5 py-2 rounded-xl w-full sm:w-60 border border-gray-200/90 dark:border-white/10 shadow-xs hover:border-gray-300 dark:hover:border-white/20 focus-within:border-[#0072ED] dark:focus-within:border-[#FCD535] focus-within:ring-2 focus-within:ring-[#0072ED]/15 dark:focus-within:ring-[#FCD535]/15 transition-all">
+                                    <SearchNormal1 size={14} color={isDark ? "#848e9c" : "#64748b"} className="shrink-0" />
                                     <input
                                         type="text"
                                         placeholder="Filter by 0x address..."
                                         value={searchAddress}
                                         onChange={(e) => setSearchAddress(e.target.value)}
-                                        className="bg-transparent text-xs text-[var(--text-main)] outline-none w-full placeholder:text-gray-400 font-medium"
+                                        className="bg-transparent text-xs text-[var(--text-main)] outline-none w-full placeholder:text-gray-400 dark:placeholder:text-[#848e9c] font-medium"
                                     />
                                     {searchAddress && (
                                         <button

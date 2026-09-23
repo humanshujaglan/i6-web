@@ -29,6 +29,7 @@ export default function DownlinesPage() {
     const [hasScanned, setHasScanned] = useState(false);
     const [scanError, setScanError] = useState("");
     const [filterLevel, setFilterLevel] = useState<string>("");
+    const [searchAddress, setSearchAddress] = useState<string>("");
 
     useEffect(() => {
         if (!userAddress) return;
@@ -139,9 +140,11 @@ export default function DownlinesPage() {
         }
     }, [userAddress, user]);
 
-    const displayResults = filterLevel
-        ? results.filter((r) => r.level === parseInt(filterLevel, 10))
-        : results;
+    const displayResults = results.filter((r) => {
+        if (filterLevel && r.level !== parseInt(filterLevel, 10)) return false;
+        if (searchAddress && !r.address.toLowerCase().includes(searchAddress.toLowerCase().trim())) return false;
+        return true;
+    });
 
     if (!user) {
         return <UserGate error={error} onRetry={refreshData} />;
@@ -169,72 +172,110 @@ export default function DownlinesPage() {
                     </div>
                 </div>
 
-                <div className="upline-card" style={{ marginBottom: "2.5rem", padding: "1.5rem 2.5rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
+                <div className="upline-card" style={{ marginBottom: "2rem", padding: "1.5rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px" }}>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "15px", flexWrap: "wrap" }}>
-                            <span style={{ fontFamily: "var(--font-plus-jakarta)", fontSize: "0.95rem", fontWeight: 600, color: "var(--brand-blue)", textTransform: "none", letterSpacing: "normal" }}>
-                                <i className="fas fa-search" style={{ marginRight: "5px" }}></i> Target Level:
-                            </span>
-                            <input
-                                type="number"
-                                id="depthInput"
-                                min="1"
-                                max="40"
-                                value={depth}
-                                onChange={(e) => {
-                                    const v = e.target.value;
-                                    if (v === "") { setDepth(""); return; }
-                                    const n = parseInt(v);
-                                    if (!isNaN(n)) {
-                                        const clamped = String(Math.min(Math.max(n, 1), 40));
-                                        setDepth(clamped);
-                                        startScan(clamped);
-                                    }
-                                }}
-                                style={{ width: "80px", padding: "8px 12px", borderRadius: "12px", border: "1px solid rgba(0,0,0,0.08)", background: "var(--surface-color)", boxShadow: "var(--clay-inset)", fontFamily: "var(--font-plus-jakarta)", fontSize: "1rem", fontWeight: 600, color: "var(--text-main)", outline: "none", textAlign: "center" }}
-                            />
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                            {/* Target Level Input */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontFamily: "var(--font-plus-jakarta)", fontSize: "0.85rem", fontWeight: 600, color: "var(--text-soft)", display: "flex", alignItems: "center", gap: "5px" }}>
+                                    <i className="fas fa-layer-group" style={{ color: "var(--brand-blue)" }}></i> Target:
+                                </span>
+                                <div className="flex items-center gap-1.5 bg-white dark:bg-[#191d24] px-3 py-2 rounded-xl border border-gray-200/90 dark:border-white/10 shadow-xs hover:border-gray-300 dark:hover:border-white/20 focus-within:border-[#0072ED] dark:focus-within:border-[#FCD535] focus-within:ring-2 focus-within:ring-[#0072ED]/15 dark:focus-within:ring-[#FCD535]/15 transition-all">
+                                    <span className="text-xs font-semibold text-[#0072ED] dark:text-[#FCD535] font-mono select-none">
+                                        L1-
+                                    </span>
+                                    <input
+                                        type="number"
+                                        id="depthInput"
+                                        min="1"
+                                        max="40"
+                                        value={depth}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            if (v === "") { setDepth(""); return; }
+                                            const n = parseInt(v);
+                                            if (!isNaN(n)) {
+                                                const clamped = String(Math.min(Math.max(n, 1), 40));
+                                                setDepth(clamped);
+                                                startScan(clamped);
+                                            }
+                                        }}
+                                        className="w-10 bg-transparent text-xs font-semibold font-mono text-[var(--text-main)] outline-none text-center"
+                                    />
+                                    <span className="text-[11px] text-[var(--text-muted)] font-mono select-none">
+                                        /40
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Scan Button */}
                             <button
                                 id="startScanBtn"
                                 className="referral-btn"
-                                style={{ width: "auto", padding: "10px 24px", fontSize: "0.9rem", fontWeight: 600 }}
+                                style={{ width: "auto", padding: "9px 20px", fontSize: "0.85rem", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "6px", borderRadius: "12px", cursor: isScanning || isSyncingLive ? "not-allowed" : "pointer" }}
                                 onClick={() => startScan()}
                                 disabled={isScanning || isSyncingLive}
                             >
                                 {isScanning || isSyncingLive ? <i className="fas fa-circle-notch fa-spin"></i> : <i className="fas fa-satellite-dish"></i>} {isSyncingLive ? "Syncing..." : "Scan Level"}
                             </button>
 
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "10px" }}>
-                                <span style={{ fontFamily: "var(--font-plus-jakarta)", fontSize: "0.9rem", fontWeight: 600, color: "var(--text-soft)" }}>
-                                    Filter Level:
+                            {/* Filter by Level */}
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <span style={{ fontFamily: "var(--font-plus-jakarta)", fontSize: "0.85rem", fontWeight: 600, color: "var(--text-soft)", display: "flex", alignItems: "center", gap: "5px" }}>
+                                    <i className="fas fa-filter" style={{ color: "var(--brand-blue)" }}></i> Filter:
                                 </span>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="40"
-                                    placeholder="All"
-                                    value={filterLevel}
-                                    onChange={(e) => {
-                                        const v = e.target.value;
-                                        if (v === "") { setFilterLevel(""); return; }
-                                        const n = parseInt(v, 10);
-                                        if (!isNaN(n)) {
-                                            const clamped = Math.min(Math.max(n, 1), 40);
-                                            setFilterLevel(String(clamped));
-                                            if (clamped > parseInt(depth || "1", 10)) {
-                                                setDepth(String(clamped));
-                                                startScan(String(clamped));
+                                <div className="flex items-center gap-1.5 bg-white dark:bg-[#191d24] px-3 py-2 rounded-xl border border-gray-200/90 dark:border-white/10 shadow-xs hover:border-gray-300 dark:hover:border-white/20 focus-within:border-[#0072ED] dark:focus-within:border-[#FCD535] focus-within:ring-2 focus-within:ring-[#0072ED]/15 dark:focus-within:ring-[#FCD535]/15 transition-all">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="40"
+                                        placeholder="Level (1-40)"
+                                        value={filterLevel}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            if (v === "") { setFilterLevel(""); return; }
+                                            const n = parseInt(v, 10);
+                                            if (!isNaN(n)) {
+                                                const clamped = Math.min(Math.max(n, 1), 40);
+                                                setFilterLevel(String(clamped));
+                                                if (clamped > parseInt(depth || "1", 10)) {
+                                                    setDepth(String(clamped));
+                                                    startScan(String(clamped));
+                                                }
                                             }
-                                        }
-                                    }}
-                                    style={{ width: "70px", padding: "8px 10px", borderRadius: "12px", border: "1px solid rgba(0,0,0,0.08)", background: "var(--surface-color)", boxShadow: "var(--clay-inset)", fontFamily: "var(--font-plus-jakarta)", fontSize: "0.95rem", fontWeight: 600, color: "var(--text-main)", outline: "none", textAlign: "center" }}
+                                        }}
+                                        className="w-24 bg-transparent text-xs font-semibold font-mono text-[var(--text-main)] outline-none placeholder:text-gray-400 dark:placeholder:text-[#848e9c]"
+                                    />
+                                    {filterLevel && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setFilterLevel("")}
+                                            style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem" }}
+                                            title="Clear filter"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Filter by Address */}
+                            <div className="flex items-center gap-2 bg-white dark:bg-[#191d24] px-3 py-2 rounded-xl border border-gray-200/90 dark:border-white/10 shadow-xs hover:border-gray-300 dark:hover:border-white/20 focus-within:border-[#0072ED] dark:focus-within:border-[#FCD535] focus-within:ring-2 focus-within:ring-[#0072ED]/15 dark:focus-within:ring-[#FCD535]/15 transition-all">
+                                <i className="fas fa-search text-xs text-gray-400"></i>
+                                <input
+                                    type="text"
+                                    placeholder="Search 0x address..."
+                                    value={searchAddress}
+                                    onChange={(e) => setSearchAddress(e.target.value)}
+                                    className="w-32 sm:w-44 bg-transparent text-xs text-[var(--text-main)] outline-none placeholder:text-gray-400 dark:placeholder:text-[#848e9c] font-medium font-mono"
                                 />
-                                {filterLevel && (
+                                {searchAddress && (
                                     <button
                                         type="button"
-                                        onClick={() => setFilterLevel("")}
-                                        style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.9rem" }}
-                                        title="Clear filter"
+                                        onClick={() => setSearchAddress("")}
+                                        style={{ background: "transparent", border: "none", color: "var(--text-muted)", cursor: "pointer", fontSize: "0.85rem" }}
+                                        title="Clear search"
                                     >
                                         ✕
                                     </button>
@@ -242,12 +283,13 @@ export default function DownlinesPage() {
                             </div>
                         </div>
 
-                        <div style={{ background: "var(--surface-color)", padding: "10px 20px", borderRadius: "16px", boxShadow: "var(--clay-inset)", display: "flex", alignItems: "center", gap: "10px", border: "1px solid rgba(0,0,0,0.05)" }}>
-                            <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", fontFamily: "var(--font-plus-jakarta)", fontWeight: 500, textTransform: "none", letterSpacing: "normal" }}>
-                                Partners Found:
+                        {/* Partners Counter */}
+                        <div className="flex items-center gap-2 bg-white dark:bg-[#191d24] px-4 py-2 rounded-xl border border-gray-200/90 dark:border-white/10 shadow-xs">
+                            <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", fontFamily: "var(--font-plus-jakarta)", fontWeight: 500 }}>
+                                Partners:
                             </span>
-                            <span id="totalFoundBadge" className="font-mono" style={{ color: "var(--brand-blue)", fontFamily: "var(--font-plus-jakarta)", fontWeight: 700, fontSize: "1.3rem", lineHeight: 1 }}>
-                                {filterLevel ? `${displayResults.length} / ${results.length}` : results.length}
+                            <span id="totalFoundBadge" className="font-mono font-bold text-sm" style={{ color: "var(--brand-blue)" }}>
+                                {filterLevel || searchAddress ? `${displayResults.length} / ${results.length}` : results.length}
                             </span>
                         </div>
 
