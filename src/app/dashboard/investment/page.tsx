@@ -282,7 +282,9 @@ function InvestmentContent() {
 
             try {
                 const amountWei = ethers.parseUnits(amountVal.toString(), 18);
-                const priceNum = spotPrice > 0n ? parseFloat(ethers.formatUnits(spotPrice, 18)) : 0.6487;
+                const priceNum = spotPrice > 0n
+                    ? parseFloat(ethers.formatUnits(spotPrice, 18))
+                    : (parseFloat(i6Price?.replace(/[^0-9.]/g, "") || "0.1048") || 0.1048);
                 if (priceNum > 0) {
                     setTotalI6Tokens((amountVal / priceNum).toFixed(4) + " i6");
                 }
@@ -631,7 +633,7 @@ function InvestmentContent() {
                             {/* Bottom Card: Staking Package Overview & i6 Conversion */}
                             <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
                                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                                    <span><strong className="text-gray-900 dark:text-white font-medium">{i6Price && i6Price !== "..." ? `i6 = ${i6Price}` : "$0.6487 USD"}</strong></span>
+                                    <span><strong className="text-gray-900 dark:text-white font-medium">{i6Price && i6Price !== "..." ? `i6 = ${i6Price}` : "$0.1048 USD"}</strong></span>
                                     <span>Package Amount</span>
                                 </div>
 

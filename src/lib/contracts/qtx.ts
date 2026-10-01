@@ -3,6 +3,9 @@ import {
     QUANTX_REINVEST_ADDRESS,
     QTX_TOKEN_ADDRESS,
     I6_TOKEN_ADDRESS,
+    USDT_ADDRESS,
+    WBNB_ADDRESS,
+    ROUTER_ADDRESS,
     QUANTX_ABI,
     ERC20_ABI,
     RELAYER_ADDRESS,
@@ -12,6 +15,69 @@ import {
 export const BSC_RPC_DEFAULT = process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.org";
 export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 56);
 export const UNLIMITED_ALLOWANCE_THRESHOLD = 2n ** 255n; // Half of MaxUint256, easily accounts for any spends while still unlimited
+
+export const SWAP_PATH_I6_TO_QTX = [
+    I6_TOKEN_ADDRESS,
+    USDT_ADDRESS,
+    WBNB_ADDRESS,
+    QTX_TOKEN_ADDRESS,
+];
+
+/**
+ * Calculates real-time expected QTX returned from i6 swap on PancakeSwap
+ */
+export async function fetchQtxQuote(
+    i6AmountWei: bigint,
+    publicClientOrProvider?: any
+): Promise<{ expectedQtxWei: bigint; formattedQtx: string }> {
+    if (i6AmountWei <= 0n) {
+        return { expectedQtxWei: 0n, formattedQtx: "0.0000" };
+    }
+
+    try {
+        if (publicClientOrProvider && typeof publicClientOrProvider.readContract === "function") {
+            const amounts = await publicClientOrProvider.readContract({
+                address: ROUTER_ADDRESS as `0x${string}`,
+                abi: [
+                    {
+                        inputs: [
+                            { internalType: "uint256", name: "amountIn", type: "uint256" },
+                            { internalType: "address[]", name: "path", type: "address[]" },
+                        ],
+                        name: "getAmountsOut",
+                        outputs: [{ internalType: "uint256[]", name: "amounts", type: "uint256[]" }],
+                        stateMutability: "view",
+                        type: "function",
+                    },
+                ],
+                functionName: "getAmountsOut",
+                args: [i6AmountWei, SWAP_PATH_I6_TO_QTX as `0x${string}`[]],
+            }) as bigint[];
+
+            const qtxOut = amounts[amounts.length - 1];
+            return {
+                expectedQtxWei: qtxOut,
+                formattedQtx: parseFloat(ethers.formatUnits(qtxOut, 18)).toFixed(4),
+            };
+        }
+
+        const provider = publicClientOrProvider || new ethers.JsonRpcProvider(BSC_RPC_DEFAULT);
+        const router = new ethers.Contract(
+            ROUTER_ADDRESS,
+            ["function getAmountsOut(uint amountIn, address[] memory path) view returns (uint[] memory amounts)"],
+            provider
+        );
+        const amounts = await router.getAmountsOut(i6AmountWei, SWAP_PATH_I6_TO_QTX);
+        const qtxOut = BigInt(amounts[amounts.length - 1].toString());
+        return {
+            expectedQtxWei: qtxOut,
+            formattedQtx: parseFloat(ethers.formatUnits(qtxOut, 18)).toFixed(4),
+        };
+    } catch (e) {
+        console.warn("fetchQtxQuote error:", e);
+        return { expectedQtxWei: 0n, formattedQtx: "0.0000" };
+    }
+}
 
 export interface UserAllocationResult {
     finalQtxAmount: bigint;

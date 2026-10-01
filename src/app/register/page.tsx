@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { ethers } from "ethers";
-import { useAccount, useWriteContract, usePublicClient, useSwitchChain } from "wagmi";
+import { useAccount, useWriteContract, usePublicClient, useSwitchChain, useSignTypedData } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { bsc } from "@reown/appkit/networks";
 import { useTheme } from "@/app/context/ThemeContext";
-import { MAIN_CONTRACT_ADDRESS as CONTRACT_ADDRESS, USDT_ADDRESS, GENESIS_ADDRESS, I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI } from "@/lib/contracts/abis";
+import { MAIN_CONTRACT_ADDRESS as CONTRACT_ADDRESS, USDT_ADDRESS, GENESIS_ADDRESS, I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI, QUANTX_REINVEST_ADDRESS, RELAYER_API_BASE } from "@/lib/contracts/abis";
 import { UNLIMITED_ALLOWANCE_THRESHOLD } from "@/lib/contracts/qtx";
 import {
     Sun1,
@@ -85,6 +85,7 @@ function RegisterContent() {
     const { address, isConnected, chainId } = useAccount();
     const { open } = useAppKit();
     const { writeContractAsync } = useWriteContract();
+    const { signTypedDataAsync } = useSignTypedData();
     const publicClient = usePublicClient();
     const { switchChainAsync } = useSwitchChain();
     const { theme, toggleTheme } = useTheme();
@@ -373,19 +374,67 @@ function RegisterContent() {
                     body: JSON.stringify(planPayload),
                 }).catch((e) => console.error("Plan sync error:", e));
 
-                // Submit chosen QuantX reinvestment preference (25%, 50%, 75%, 100%) to backend API
-                const reinvestPayload = {
-                    userAddress: address.toLowerCase(),
-                    percent: reinvestPercent,
-                    nonce: 0,
-                    deadline: Math.floor(Date.now() / 1000) + 86400 * 365,
-                };
+                // Submit chosen QuantX reinvestment preference (25%, 50%, 75%, 100%) to relayer backend
+                try {
+                    setStatusText("Sign Preference in Wallet...");
+                    const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 * 30; // 30 days
+                    let relayerNonce = 0;
+                    try {
+                        const statusRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/status/${address}`);
+                        if (statusRes.ok) {
+                            const statusData = await statusRes.json();
+                            relayerNonce = Number(statusData.nonce || 0);
+                        }
+                    } catch {}
+
+                    const signature = await signTypedDataAsync({
+                        domain: {
+                            name: "QTX Reinvestment Engine",
+                            version: "1",
+                            chainId: 56,
+                            verifyingContract: QUANTX_REINVEST_ADDRESS as `0x${string}`,
+                        },
+                        types: {
+                            ReinvestPreference: [
+                                { name: "user", type: "address" },
+                                { name: "token", type: "address" },
+                                { name: "percent", type: "uint256" },
+                                { name: "nonce", type: "uint256" },
+                                { name: "deadline", type: "uint256" },
+                            ],
+                        },
+                        primaryType: "ReinvestPreference",
+                        message: {
+                            user: address as `0x${string}`,
+                            token: I6_TOKEN_ADDRESS as `0x${string}`,
+                            percent: BigInt(reinvestPercent),
+                            nonce: BigInt(relayerNonce),
+                            deadline: BigInt(deadline),
+                        },
+                    });
+
+                    // Post directly to backend
+                    const prefRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/preference`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            userAddress: address.toLowerCase(),
+                            percent: reinvestPercent,
+                            nonce: relayerNonce,
+                            deadline,
+                            signature,
+                        }),
+                    });
+
+                    if (!prefRes.ok) {
+                        const errJson = await prefRes.json().catch(() => ({}));
+                        console.warn("Direct backend preference error on register:", errJson?.error);
+                    }
+                } catch (prefErr) {
+                    console.warn("Direct preference sign/submit notice:", prefErr);
+                }
+
                 localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, reinvestPercent.toString());
-                fetch("/api/reinvest/preference", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(reinvestPayload),
-                }).catch((e) => console.error("Reinvest preference sync error:", e));
             } catch (e) {
                 console.error("Local plan and reinvest pref save error:", e);
             }

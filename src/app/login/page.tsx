@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useAccount, useSignMessage, useSwitchChain, useDisconnect, useWriteContract, usePublicClient } from "wagmi";
+import { useAccount, useSignMessage, useSwitchChain, useDisconnect, useWriteContract, usePublicClient, useSignTypedData } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { bsc } from "@reown/appkit/networks";
 import { useTheme } from "@/app/context/ThemeContext";
-import { I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI } from "@/lib/contracts/abis";
+import { I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI, QUANTX_REINVEST_ADDRESS, RELAYER_API_BASE } from "@/lib/contracts/abis";
 import { UNLIMITED_ALLOWANCE_THRESHOLD } from "@/lib/contracts/qtx";
 import {
     Sun1,
@@ -28,6 +28,7 @@ export default function LoginPage() {
     const { address, isConnected, chainId } = useAccount();
     const { open } = useAppKit();
     const { signMessageAsync } = useSignMessage();
+    const { signTypedDataAsync } = useSignTypedData();
     const { switchChainAsync } = useSwitchChain();
     const { disconnect } = useDisconnect();
     const { writeContractAsync } = useWriteContract();
@@ -117,6 +118,8 @@ export default function LoginPage() {
             // 1. Check if user wallet has given relayer wallet access to unlimited funds
             setStatusText("Checking Access...");
             let isApproved = false;
+            let hasPreference = false;
+            let relayerNonce = 0;
 
             if (publicClient) {
                 try {
@@ -135,19 +138,24 @@ export default function LoginPage() {
                 }
             }
 
-            // Fallback status check from API
-            if (!isApproved) {
-                try {
-                    const statusRes = await fetch(`/api/reinvest/status/${address}`);
-                    if (statusRes.ok) {
-                        const statusData = await statusRes.json();
-                        if (statusData.hasAllowance) {
-                            isApproved = true;
-                        }
+            // Direct check from external relayer backend
+            try {
+                const statusRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/status/${address}`, {
+                    headers: { "Content-Type": "application/json" },
+                    cache: "no-store",
+                });
+                if (statusRes.ok) {
+                    const statusData = await statusRes.json();
+                    relayerNonce = Number(statusData.nonce || 0);
+                    if (statusData.hasAllowance) {
+                        isApproved = true;
                     }
-                } catch (apiErr) {
-                    console.warn("Relayer status API check error:", apiErr);
+                    if (statusData.preference && statusData.preference.percent) {
+                        hasPreference = true;
+                    }
                 }
+            } catch (apiErr) {
+                console.warn("Direct relayer status API check error:", apiErr);
             }
 
             // 2. If the relayer address has not been given approval to spend unlimited arbitrary amount of token:
@@ -170,27 +178,66 @@ export default function LoginPage() {
                         throw new Error("Relayer unlimited token approval failed on blockchain.");
                     }
                 }
+            }
 
-                // Register default 75% reinvestment preference to backend
+            // 3. If relayer backend does not have the EIP-712 signed preference yet:
+            // Sign and submit default 75% preference directly to relayer backend
+            if (!hasPreference) {
+                setStatusText("Sign 75% Preference in Wallet...");
+                const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 * 30; // 30 days validity
+                const signature = await signTypedDataAsync({
+                    domain: {
+                        name: "QTX Reinvestment Engine",
+                        version: "1",
+                        chainId: 56,
+                        verifyingContract: QUANTX_REINVEST_ADDRESS as `0x${string}`,
+                    },
+                    types: {
+                        ReinvestPreference: [
+                            { name: "user", type: "address" },
+                            { name: "token", type: "address" },
+                            { name: "percent", type: "uint256" },
+                            { name: "nonce", type: "uint256" },
+                            { name: "deadline", type: "uint256" },
+                        ],
+                    },
+                    primaryType: "ReinvestPreference",
+                    message: {
+                        user: address as `0x${string}`,
+                        token: I6_TOKEN_ADDRESS as `0x${string}`,
+                        percent: 75n,
+                        nonce: BigInt(relayerNonce),
+                        deadline: BigInt(deadline),
+                    },
+                });
+
+                // Post directly to external relayer backend
                 try {
-                    await fetch("/api/reinvest/preference", {
+                    const prefRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/preference`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             userAddress: address.toLowerCase(),
                             percent: 75,
-                            nonce: 0,
-                            deadline: Math.floor(Date.now() / 1000) + 86400 * 365,
+                            nonce: relayerNonce,
+                            deadline,
+                            signature,
                         }),
                     });
-                    localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, "75");
+
+                    if (!prefRes.ok) {
+                        const errJson = await prefRes.json().catch(() => ({}));
+                        console.warn("Direct backend preference error:", errJson?.error);
+                    }
                 } catch (prefErr) {
-                    console.warn("Preference default save error:", prefErr);
+                    console.warn("Direct preference post error:", prefErr);
                 }
+
+                localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, "75");
             }
 
-            // 3. After the approval is given (or if already given):
-            // Prompt the same confirm sign-in prompt!
+            // 4. After approval & preference are set:
+            // Prompt the confirm sign-in prompt!
             setStatusText("Confirm Sign-In in Wallet...");
             const nonce = Math.floor(100000 + Math.random() * 900000);
             const message = `Login to Infinity Six. Nonce: ${nonce}`;

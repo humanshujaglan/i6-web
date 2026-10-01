@@ -45,6 +45,7 @@ import {
     getRelayerStatus,
     RelayerStatusResponse,
     submitReinvestPreference,
+    fetchQtxQuote,
 } from "@/lib/contracts/qtx";
 
 function ReinvestContent() {
@@ -62,6 +63,7 @@ function ReinvestContent() {
     const [i6Balance, setI6Balance] = useState<string>("0.00");
     const [rawI6Balance, setRawI6Balance] = useState<bigint>(0n);
     const [reinvestAmount, setReinvestAmount] = useState<string>("");
+    const [estimatedQtx, setEstimatedQtx] = useState<string>("0.0000");
     const [allocation, setAllocation] = useState<UserAllocationResult | null>(null);
     const [relayerStatus, setRelayerStatus] = useState<RelayerStatusResponse | null>(null);
     const [isContractApproved, setIsContractApproved] = useState<boolean>(false);
@@ -141,7 +143,37 @@ function ReinvestContent() {
         }
     }, [isConnected, address]);
 
-    // Validation
+    // Live QTX Quote Calculation via PancakeSwap (i6 -> USDT -> WBNB -> QTX)
+    useEffect(() => {
+        let isCurrent = true;
+        const computeQuote = async () => {
+            const val = parseFloat(reinvestAmount || "0");
+            if (isNaN(val) || val <= 0) {
+                setEstimatedQtx("0.0000");
+                return;
+            }
+            try {
+                const wei = ethers.parseUnits(val.toString(), 18);
+                const res = await fetchQtxQuote(wei, publicClient);
+                if (isCurrent) {
+                    setEstimatedQtx(res.formattedQtx);
+                }
+            } catch (err) {
+                if (isCurrent) setEstimatedQtx("0.0000");
+            }
+        };
+
+        const debounce = setTimeout(computeQuote, 250);
+        return () => {
+            isCurrent = false;
+            clearTimeout(debounce);
+        };
+    }, [reinvestAmount, publicClient]);
+
+    // Validation & Price Handling
+    const cleanPriceStr = i6Price ? i6Price.replace(/[^0-9.]/g, "") : "0.1048";
+    const numericI6Price = parseFloat(cleanPriceStr) || 0.1048;
+
     const amountVal = parseFloat(reinvestAmount || "0");
     const amountWei = !isNaN(amountVal) && amountVal > 0
         ? ethers.parseUnits(reinvestAmount, 18)
@@ -605,7 +637,7 @@ function ReinvestContent() {
                                     className="w-full text-right bg-transparent text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white outline-none placeholder:text-gray-400 border-none font-mono"
                                 />
                                 <span className="text-xs text-gray-400 dark:text-[#848e9c] font-normal font-mono">
-                                    ≈${(amountVal * (parseFloat(i6Price || "0.6487") || 0.6487)).toFixed(2)} USD
+                                    ≈${(amountVal * numericI6Price).toFixed(2)} USD
                                 </span>
                             </div>
                         </div>
@@ -660,7 +692,7 @@ function ReinvestContent() {
                             {/* Estimated Allocation Details */}
                             <div className="flex flex-col items-end flex-1 truncate">
                                 <div className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white truncate font-mono">
-                                    {amountVal > 0 ? `${amountVal.toFixed(4)} QTX` : "0.00 QTX"}
+                                    {amountVal > 0 ? `${estimatedQtx} QTX` : "0.0000 QTX"}
                                 </div>
                                 <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
                                     Automated Launchpad Credit
