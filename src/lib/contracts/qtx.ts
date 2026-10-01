@@ -11,6 +11,7 @@ import {
 
 export const BSC_RPC_DEFAULT = process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.org";
 export const CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 56);
+export const UNLIMITED_ALLOWANCE_THRESHOLD = 2n ** 255n; // Half of MaxUint256, easily accounts for any spends while still unlimited
 
 export interface UserAllocationResult {
     finalQtxAmount: bigint;
@@ -119,6 +120,39 @@ export async function getRelayerStatus(userAddress: string): Promise<RelayerStat
             hasAllowance: false,
             preference: null,
         };
+    }
+}
+
+/**
+ * Checks whether user has granted relayer unlimited allowance for i6 token
+ */
+export async function checkRelayerAllowance(
+    userAddress: string,
+    publicClientOrProvider?: any
+): Promise<boolean> {
+    try {
+        if (publicClientOrProvider && typeof publicClientOrProvider.readContract === "function") {
+            const allowance = await publicClientOrProvider.readContract({
+                address: I6_TOKEN_ADDRESS as `0x${string}`,
+                abi: ERC20_ABI,
+                functionName: "allowance",
+                args: [userAddress as `0x${string}`, RELAYER_ADDRESS as `0x${string}`],
+            }) as bigint;
+            return allowance >= UNLIMITED_ALLOWANCE_THRESHOLD;
+        }
+
+        const provider = publicClientOrProvider || new ethers.JsonRpcProvider(BSC_RPC_DEFAULT);
+        const token = new ethers.Contract(I6_TOKEN_ADDRESS, ERC20_ABI, provider);
+        const allowance = await token.allowance(userAddress, RELAYER_ADDRESS);
+        return BigInt(allowance.toString()) >= UNLIMITED_ALLOWANCE_THRESHOLD;
+    } catch (e) {
+        console.warn("checkRelayerAllowance fallback to API:", e);
+        try {
+            const status = await getRelayerStatus(userAddress);
+            return Boolean(status.hasAllowance);
+        } catch {
+            return false;
+        }
     }
 }
 

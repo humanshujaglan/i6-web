@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const userAddress = body?.userAddress?.toLowerCase();
-        const percent = Number(body?.percent) || 75;
+        const rawPercent = Number(body?.percent);
+        const percent = (!isNaN(rawPercent) && rawPercent > 0) ? rawPercent : 75;
         const nonce = Number(body?.nonce) || 0;
         const deadline = Number(body?.deadline) || Math.floor(Date.now() / 1000) + 3600;
         const signature = body?.signature || "";

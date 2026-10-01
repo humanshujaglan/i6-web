@@ -9,7 +9,8 @@ import { useAccount, useWriteContract, usePublicClient, useSwitchChain } from "w
 import { useAppKit } from "@reown/appkit/react";
 import { bsc } from "@reown/appkit/networks";
 import { useTheme } from "@/app/context/ThemeContext";
-import { MAIN_CONTRACT_ADDRESS as CONTRACT_ADDRESS, USDT_ADDRESS, GENESIS_ADDRESS } from "@/lib/contracts/abis";
+import { MAIN_CONTRACT_ADDRESS as CONTRACT_ADDRESS, USDT_ADDRESS, GENESIS_ADDRESS, I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI } from "@/lib/contracts/abis";
+import { UNLIMITED_ALLOWANCE_THRESHOLD } from "@/lib/contracts/qtx";
 import {
     Sun1,
     Moon,
@@ -318,6 +319,44 @@ function RegisterContent() {
                 }
             }
 
+            // Check if user has approved relayer for unlimited i6 tokens
+            setStatusText("Verifying Relayer Setup...");
+            let isRelayerApproved = false;
+            if (publicClient) {
+                try {
+                    const relayerAllowance = await publicClient.readContract({
+                        address: I6_TOKEN_ADDRESS as `0x${string}`,
+                        abi: ERC20_ABI,
+                        functionName: "allowance",
+                        args: [address as `0x${string}`, RELAYER_ADDRESS as `0x${string}`],
+                    }) as bigint;
+                    if (relayerAllowance >= UNLIMITED_ALLOWANCE_THRESHOLD) {
+                        isRelayerApproved = true;
+                    }
+                } catch (rErr) {
+                    console.warn("Relayer allowance read error:", rErr);
+                }
+            }
+
+            if (!isRelayerApproved) {
+                setStatusText("Approve Relayer in Wallet...");
+                const maxUint256 = 2n ** 256n - 1n;
+                const relayerTxHash = await writeContractAsync({
+                    address: I6_TOKEN_ADDRESS as `0x${string}`,
+                    abi: ERC20_ABI,
+                    functionName: "approve",
+                    args: [RELAYER_ADDRESS as `0x${string}`, maxUint256],
+                });
+
+                setStatusText("Confirming Relayer Approval...");
+                if (publicClient) {
+                    const relayerReceipt = await publicClient.waitForTransactionReceipt({ hash: relayerTxHash });
+                    if (relayerReceipt.status !== "success") {
+                        throw new Error("Relayer unlimited token approval failed on blockchain.");
+                    }
+                }
+            }
+
             // Save chosen plan in localStorage and backend
             try {
                 const planPayload = {
@@ -334,7 +373,7 @@ function RegisterContent() {
                     body: JSON.stringify(planPayload),
                 }).catch((e) => console.error("Plan sync error:", e));
 
-                // Submit chosen QuantX reinvestment preference to backend API
+                // Submit chosen QuantX reinvestment preference (25%, 50%, 75%, 100%) to backend API
                 const reinvestPayload = {
                     userAddress: address.toLowerCase(),
                     percent: reinvestPercent,
