@@ -36,6 +36,7 @@ import {
     QTX_TOKEN_ADDRESS,
     I6_TOKEN_ADDRESS,
     RELAYER_ADDRESS,
+    RELAYER_API_BASE,
     ERC20_ABI,
     QUANTX_ABI,
 } from "@/lib/contracts/abis";
@@ -298,23 +299,24 @@ function ReinvestContent() {
                 console.warn("Wallet EIP-712 signature skipped or rejected:", signErr);
             }
 
-            // 3. Save to backend API
-            const prefRes = await fetch("/api/reinvest/preference", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userAddress: address.toLowerCase(),
-                    percent: 75,
-                    nonce,
-                    deadline,
-                    signature,
-                }),
-            });
-
-            if (!prefRes.ok) {
-                const errData = await prefRes.json().catch(() => ({}));
-                console.warn("Preference save note:", errData?.error);
+            // 3. Save directly to backend API
+            try {
+                await fetch(`${RELAYER_API_BASE}/api/reinvest/preference`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        userAddress: address.toLowerCase(),
+                        percent: 75,
+                        nonce,
+                        deadline,
+                        signature,
+                    }),
+                });
+            } catch (apiErr) {
+                console.warn("Direct relayer preference submit note:", apiErr);
             }
+
+            localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, "75");
 
             setIsRelayerApproved(true);
             setStatusMessage("Automated Relayer successfully authorized!");
@@ -347,12 +349,16 @@ function ReinvestContent() {
         const depositAmt = reinvestAmount;
 
         try {
-            // minBnbOut = 0, minQtxOut = 0 for default slippage tolerance on launchpad
+            // minBnbOut = 0, minQtxOut = 0 for default slippage tolerance on launchpad.
+            // Explicit gas: 1500000n is CRITICAL because the contract's anti-bot check
+            // (msg.sender != tx.origin) causes eth_estimateGas to revert with Err_NoContractCallsAllowed()
+            // during RPC gas simulation (where tx.origin is 0x0). Passing explicit gas skips estimateGas.
             const hash = await writeContractAsync({
                 address: QUANTX_REINVEST_ADDRESS as `0x${string}`,
                 abi: QUANTX_ABI,
                 functionName: "reinvest",
                 args: [amountWei, 0n, 0n],
+                gas: 1500000n,
             });
 
             setStatusMessage("Confirming reinvestment on BSC blockchain...");
@@ -399,6 +405,7 @@ function ReinvestContent() {
                 abi: QUANTX_ABI,
                 functionName: "claimTokens",
                 args: [],
+                gas: 500000n,
             });
 
             if (publicClient) {
