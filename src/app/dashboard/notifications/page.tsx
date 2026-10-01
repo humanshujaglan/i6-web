@@ -20,17 +20,6 @@ export default function NotificationsPage() {
 
     const notifications = [
         {
-            id: "holding-removed",
-            title: "Holding Condition Removed for Withdrawals",
-            category: "Policy Update",
-            categoryClass: "bg-emerald-500/10 text-emerald-600 dark:text-[#0ecb81] border-emerald-500/20",
-            icon: <TickCircle size={22} color="currentColor" className="text-emerald-500 dark:text-[#0ecb81]" />,
-            message: "The i6 token holding condition is now removed. You are no longer required to hold equivalent i6 tokens in your wallet to process your withdrawals.",
-            actionLabel: "View Withdraw Portal",
-            actionHref: "/dashboard/withdraw",
-            unread: true,
-        },
-        {
             id: "min-withdraw",
             title: "Minimum Withdrawal Limit is $20",
             category: "Withdrawal Rule",
@@ -44,21 +33,21 @@ export default function NotificationsPage() {
         {
             id: "i6-holding",
             title: "Hold Equivalent i6 Tokens to Withdraw",
-            category: "Previous Rule",
-            categoryClass: "bg-gray-500/10 text-gray-500 dark:text-gray-400 border-gray-500/20",
+            category: "Holding Condition",
+            categoryClass: "bg-emerald-500/10 text-emerald-600 dark:text-[#0ecb81] border-emerald-500/20",
             icon: (
                 <Image
                     src="/3d-icons/i6-coin-icon.webp"
                     alt="i6 Token"
                     width={24}
                     height={24}
-                    className="w-6 h-6 rounded-full object-contain opacity-60"
+                    className="w-6 h-6 rounded-full object-contain"
                 />
             ),
-            message: "To withdraw your earnings, you must keep the same dollar value of i6 tokens in your connected wallet. (Note: This condition has now been lifted).",
-            actionLabel: "View Withdraw Portal",
-            actionHref: "/dashboard/withdraw",
-            unread: false,
+            message: "To withdraw your earnings, you must keep the same dollar value of i6 tokens in your connected wallet. For example, if you want to withdraw $50, your wallet must hold at least $50 worth of i6 tokens.",
+            actionLabel: "Acquire i6 on Swap",
+            actionHref: "/dashboard/swap",
+            unread: true,
         },
     ];
 
@@ -97,7 +86,7 @@ export default function NotificationsPage() {
                     </div>
 
                     <span className="px-3 py-1 rounded-full bg-white dark:bg-[#191d24] text-xs font-bold text-[#0072ED] dark:text-[#FCD535] shadow-xs">
-                        {notifications.length} Updates
+                        2 Updates
                     </span>
                 </div>
 
