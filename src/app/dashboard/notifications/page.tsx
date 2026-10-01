@@ -20,12 +20,12 @@ export default function NotificationsPage() {
 
     const notifications = [
         {
-            id: "min-withdraw",
-            title: "Minimum Withdrawal Limit is $20",
-            category: "Withdrawal Rule",
-            categoryClass: "bg-blue-500/10 text-[#0072ED] dark:text-[#7CD4FD] border-blue-500/20",
-            icon: <MoneySend size={22} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />,
-            message: "You can now make a withdrawal once your withdrawable rewards reach at least $20. Any amount below $20 cannot be submitted.",
+            id: "min-withdraw-removed",
+            title: "Minimum Withdrawal Limit Removed",
+            category: "Policy Update",
+            categoryClass: "bg-emerald-500/10 text-emerald-600 dark:text-[#0ecb81] border-emerald-500/20",
+            icon: <TickCircle size={22} color="currentColor" className="text-emerald-500 dark:text-[#0ecb81]" />,
+            message: "The $20 minimum withdrawal condition has been removed. You can now process withdrawals for any available amount without minimum threshold restrictions.",
             actionLabel: "View Withdraw Portal",
             actionHref: "/dashboard/withdraw",
             unread: true,
@@ -86,7 +86,7 @@ export default function NotificationsPage() {
                     </div>
 
                     <span className="px-3 py-1 rounded-full bg-white dark:bg-[#191d24] text-xs font-bold text-[#0072ED] dark:text-[#FCD535] shadow-xs">
-                        2 Updates
+                        {notifications.length} {notifications.length === 1 ? "Update" : "Updates"}
                     </span>
                 </div>
 

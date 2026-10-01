@@ -649,8 +649,8 @@ export default function DashboardPage() {
                 {/* 4 Action Buttons Grid */}
                 <ActionButtonsGrid isDark={isDark} />
 
-                {/* Live i6 Token Market Price Card */}
-                <I6PriceCard />
+                {/* Live i6 Token Market Price Card (commented out) */}
+                {/* <I6PriceCard /> */}
 
                 {/* Total Income Till Date & Direct Business Grid */}
                 <div className="grid grid-cols-2 gap-3">

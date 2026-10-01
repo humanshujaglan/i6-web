@@ -421,9 +421,10 @@ function WithdrawContent() {
             } else if (isLockinActive) {
                 btnDisabled = true;
                 btnText = `Withdrawal Locked (${lockDaysRemaining}d left)`;
-            } else if (totalAvailable < 20) {
-                btnDisabled = true;
-                btnText = "Min $20.00 Withdrawal Required";
+            // Minimum $20 withdrawal condition commented out:
+            // } else if (totalAvailable < 20) {
+            //     btnDisabled = true;
+            //     btnText = "Min $20.00 Withdrawal Required";
             } else if (!hasEnoughI6Worth) {
                 btnDisabled = true;
                 btnText = `Hold Equal i6 Tokens ($${userI6Worth.toFixed(2)} / $${totalAvailable.toFixed(2)})`;
@@ -509,11 +510,12 @@ function WithdrawContent() {
             return;
         }
 
-        if (liveData.totalAvailable < 20) {
-            setTxStatus("Minimum withdrawal amount is $20.00 USD.");
-            setTxStatusColor("var(--brand-blue)");
-            return;
-        }
+        // Minimum $20 withdrawal condition commented out:
+        // if (liveData.totalAvailable < 20) {
+        //     setTxStatus("Minimum withdrawal amount is $20.00 USD.");
+        //     setTxStatusColor("var(--brand-blue)");
+        //     return;
+        // }
 
         if (!liveData.hasEnoughI6Worth) {
             setTxStatus(`Insufficient i6 token holding in wallet. $${liveData.totalAvailable.toFixed(2)} USD worth required.`);
@@ -735,15 +737,15 @@ function WithdrawContent() {
                                     </div>
                                 </div>
 
-                                {/* Subtle minimum withdrawal info note */}
-                                <div className="flex items-center justify-between pt-2.5 border-t border-gray-200/60 dark:border-white/5 text-[11px] text-gray-500 dark:text-[#848e9c]">
+                                {/* Subtle minimum withdrawal info note (commented out) */}
+                                {/* <div className="flex items-center justify-between pt-2.5 border-t border-gray-200/60 dark:border-white/5 text-[11px] text-gray-500 dark:text-[#848e9c]">
                                     <span>Minimum withdrawal: $20.00</span>
                                     {liveData.totalAvailable > 0 && liveData.totalAvailable < 20 && (
                                         <span className="text-rose-500 dark:text-rose-400 font-medium">
                                             Below $20 minimum
                                         </span>
                                     )}
-                                </div>
+                                </div> */}
                             </div>
 
                             {/* 252-Day Lock-in Notice */}
@@ -765,7 +767,7 @@ function WithdrawContent() {
                             )}
 
                             {/* i6 Token Holding Valuation Card */}
-                            {!liveData.isLockinActive && liveData.totalAvailable >= 20 && (
+                            {!liveData.isLockinActive && liveData.totalAvailable > 0 /* && liveData.totalAvailable >= 20 */ && (
                                 <div 
                                     className="w-full rounded-2xl p-4 border flex flex-col gap-3 text-xs transition-all"
                                     style={{
@@ -998,7 +1000,7 @@ function WithdrawContent() {
                                 loading={loading}
                                 disabledText={liveData.btnText}
                                 loadingText={txStatus || "Confirming in Wallet..."}
-                                hasErrorBorder={!liveData.isLockinActive && liveData.totalAvailable < 20}
+                                hasErrorBorder={false /* !liveData.isLockinActive && liveData.totalAvailable < 20 */}
                             />
                         </motion.div>
                     ) : (
