@@ -392,7 +392,9 @@ function WithdrawContent() {
 
             const effectiveI6Balance = rawI6Balance > 0 ? rawI6Balance : 0;
             const userI6Worth = effectiveI6Balance * spotPriceFloat;
-            const hasEnoughI6Worth = totalAvailable <= 0 ? true : (userI6Worth >= totalAvailable);
+            // Token holding condition commented out:
+            // const hasEnoughI6Worth = totalAvailable <= 0 ? true : (userI6Worth >= totalAvailable);
+            const hasEnoughI6Worth = true;
 
             // Calculate 252-day lock-in status
             const isLockinPlan = userPlan?.plan === "lockin";
@@ -425,9 +427,10 @@ function WithdrawContent() {
             // } else if (totalAvailable < 20) {
             //     btnDisabled = true;
             //     btnText = "Min $20.00 Withdrawal Required";
-            } else if (!hasEnoughI6Worth) {
-                btnDisabled = true;
-                btnText = `Hold Equal i6 Tokens ($${userI6Worth.toFixed(2)} / $${totalAvailable.toFixed(2)})`;
+            // Token holding condition commented out:
+            // } else if (!hasEnoughI6Worth) {
+            //     btnDisabled = true;
+            //     btnText = `Hold Equal i6 Tokens ($${userI6Worth.toFixed(2)} / $${totalAvailable.toFixed(2)})`;
             }
 
             setLiveData({
@@ -517,11 +520,12 @@ function WithdrawContent() {
         //     return;
         // }
 
-        if (!liveData.hasEnoughI6Worth) {
-            setTxStatus(`Insufficient i6 token holding in wallet. $${liveData.totalAvailable.toFixed(2)} USD worth required.`);
-            setTxStatusColor("var(--brand-blue)");
-            return;
-        }
+        // Token holding condition commented out:
+        // if (!liveData.hasEnoughI6Worth) {
+        //     setTxStatus(`Insufficient i6 token holding in wallet. $${liveData.totalAvailable.toFixed(2)} USD worth required.`);
+        //     setTxStatusColor("var(--brand-blue)");
+        //     return;
+        // }
 
         if (!address && !isConnected) {
             open();
@@ -766,8 +770,8 @@ function WithdrawContent() {
                                 </div>
                             )}
 
-                            {/* i6 Token Holding Valuation Card */}
-                            {!liveData.isLockinActive && liveData.totalAvailable > 0 /* && liveData.totalAvailable >= 20 */ && (
+                            {/* i6 Token Holding Valuation Card (Commented out) */}
+                            {/* {!liveData.isLockinActive && liveData.totalAvailable > 0 && (
                                 <div 
                                     className="w-full rounded-2xl p-4 border flex flex-col gap-3 text-xs transition-all"
                                     style={{
@@ -838,7 +842,7 @@ function WithdrawContent() {
                                         </div>
                                     )}
                                 </div>
-                            )}
+                            )} */}
 
                             {/* Bill-Style Breakdown & Payout Card with Dashed Lining and Collapsible Drawer */}
                             <div 
