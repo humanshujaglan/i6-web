@@ -49,6 +49,7 @@ import {
     DirectBusinessCard,
     SponsorAddressCard,
     CompoundingPrincipalCard,
+    QuantXCard,
 } from "./components/cards";
 import CopyAlert from "./components/CopyAlert";
 import CompoundingTimerWidget from "./components/widgets/CompoundingTimerWidget";
@@ -726,13 +727,16 @@ export default function DashboardPage() {
 
                             {/* New Principal (Deposit + Profit) Compounding Card */}
                             {(allSubTab === "total" || allSubTab === "rwp") && (
-                                <CompoundingPrincipalCard
-                                    depositAmount={totalDepositsFloat}
-                                    profitAmount={liveData.pendingRWP}
-                                    dailyRate={Number(user.currentRwpRate || 5)}
-                                    streakDays={totalDepositsFloat > 0 ? streakDays : 0}
-                                    onViewStreak={() => setManualStreakOpen(true)}
-                                />
+                                <>
+                                    <CompoundingPrincipalCard
+                                        depositAmount={totalDepositsFloat}
+                                        profitAmount={liveData.pendingRWP}
+                                        dailyRate={Number(user.currentRwpRate || 5)}
+                                        streakDays={totalDepositsFloat > 0 ? streakDays : 0}
+                                        onViewStreak={() => setManualStreakOpen(true)}
+                                    />
+                                    <QuantXCard userAddress={userAddress} />
+                                </>
                             )}
 
                             {/* DailyROI + Salary — 2-per-row */}
@@ -856,13 +860,16 @@ export default function DashboardPage() {
 
                             {/* New Principal (Deposit + Profit) Compounding Card */}
                             {(roiSubTab === "total" || roiSubTab === "rwp") && (
-                                <CompoundingPrincipalCard
-                                    depositAmount={totalDepositsFloat}
-                                    profitAmount={liveData.pendingRWP}
-                                    dailyRate={Number(user.currentRwpRate || 5)}
-                                    streakDays={totalDepositsFloat > 0 ? streakDays : 0}
-                                    onViewStreak={() => setManualStreakOpen(true)}
-                                />
+                                <>
+                                    <CompoundingPrincipalCard
+                                        depositAmount={totalDepositsFloat}
+                                        profitAmount={liveData.pendingRWP}
+                                        dailyRate={Number(user.currentRwpRate || 5)}
+                                        streakDays={totalDepositsFloat > 0 ? streakDays : 0}
+                                        onViewStreak={() => setManualStreakOpen(true)}
+                                    />
+                                    <QuantXCard userAddress={userAddress} />
+                                </>
                             )}
 
                             {/* DailyROI + HyperBooster — 2-per-row */}

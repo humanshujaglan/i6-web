@@ -8,7 +8,7 @@ import { Copy, ExportCircle, TickCircle, CloseCircle } from "iconsax-react";
 import { useTheme } from "@/app/context/ThemeContext";
 
 export interface TransactionReceiptData {
-    type?: "deposit" | "withdraw" | "swap" | "register";
+    type?: "deposit" | "withdraw" | "swap" | "register" | "reinvest";
     hash: string;
     amount: string;
     tokenSymbol?: string;
@@ -293,6 +293,8 @@ export default function TransactionReceiptModal({
                 router.push("/dashboard/withdraw?tab=history");
             } else if (txData?.type === "register") {
                 router.push("/login");
+            } else if (txData?.type === "reinvest") {
+                router.push("/dashboard/reinvest");
             } else {
                 router.push("/dashboard/investment?tab=history");
             }
@@ -485,6 +487,8 @@ export default function TransactionReceiptModal({
                                                     ? "Swap Confirmed!"
                                                     : txData.type === "withdraw"
                                                     ? "Withdrawal Confirmed!"
+                                                    : txData.type === "reinvest"
+                                                    ? "Reinvestment Confirmed!"
                                                     : "Deposit Confirmed!"}
                                             </h1>
                                             <p className="text-[11px] text-gray-500 font-medium mt-0.5">

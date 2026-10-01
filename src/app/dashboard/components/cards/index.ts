@@ -16,3 +16,5 @@ export { default as TotalIncomeCard } from "./TotalIncomeCard";
 export { default as DirectBusinessCard } from "./DirectBusinessCard";
 export { default as SponsorAddressCard } from "./SponsorAddressCard";
 export { default as CompoundingPrincipalCard } from "./CompoundingPrincipalCard";
+export { default as QuantXCard } from "./QuantXCard";
+

@@ -93,6 +93,7 @@ function RegisterContent() {
     const [sponsorAddress, setSponsorAddress] = useState<string>("");
     const [investAmount, setInvestAmount] = useState<string>("");
     const [selectedPlan, setSelectedPlan] = useState<"flexible" | "lockin">("flexible");
+    const [reinvestPercent, setReinvestPercent] = useState<number>(75);
     const [copied, setCopied] = useState(false);
     const [confirmedTx, setConfirmedTx] = useState<TransactionReceiptData | null>(null);
     const [isAlreadyRegistered, setIsAlreadyRegistered] = useState(false);
@@ -323,6 +324,7 @@ function RegisterContent() {
                     address: address.toLowerCase(),
                     plan: selectedPlan,
                     lockinDays: 252,
+                    reinvestPercent,
                     timestamp: Date.now(),
                 };
                 localStorage.setItem(`i6_user_plan_${address.toLowerCase()}`, JSON.stringify(planPayload));
@@ -331,8 +333,22 @@ function RegisterContent() {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(planPayload),
                 }).catch((e) => console.error("Plan sync error:", e));
+
+                // Submit chosen QuantX reinvestment preference to backend API
+                const reinvestPayload = {
+                    userAddress: address.toLowerCase(),
+                    percent: reinvestPercent,
+                    nonce: 0,
+                    deadline: Math.floor(Date.now() / 1000) + 86400 * 365,
+                };
+                localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, reinvestPercent.toString());
+                fetch("/api/reinvest/preference", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(reinvestPayload),
+                }).catch((e) => console.error("Reinvest preference sync error:", e));
             } catch (e) {
-                console.error("Local plan save error:", e);
+                console.error("Local plan and reinvest pref save error:", e);
             }
 
             // Trigger thermal receipt dispenser modal ONLY after on-chain confirmation
@@ -588,6 +604,49 @@ function RegisterContent() {
                                     </span>
                                 </button>
                             </div>
+                        </div>
+
+                        {/* QuantX AI Reinvestment Allocation Preference */}
+                        <div className="flex flex-col gap-1.5">
+                            <label className="text-[11px] font-semibold text-gray-700 dark:text-gray-300 flex items-center justify-between">
+                                <span className="flex items-center gap-1.5">
+                                    <span>QuantX AI (QTX) Reinvest</span>
+                                    <span className="px-1.5 py-0.5 rounded bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[9px] font-bold text-[#0072ED] dark:text-[#FCD535]">
+                                        AI Yield
+                                    </span>
+                                </span>
+                                <span className="text-[10px] text-gray-400 font-normal">Backend Automated</span>
+                            </label>
+
+                            <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                                {[25, 50, 75, 100].map((pct) => {
+                                    const isSelected = reinvestPercent === pct;
+                                    return (
+                                        <button
+                                            key={pct}
+                                            type="button"
+                                            onClick={() => setReinvestPercent(pct)}
+                                            className={`pt-2.5 pb-2 px-1 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 relative ${
+                                                isSelected
+                                                    ? "border-[#0072ED] dark:border-[#FCD535] bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] font-bold shadow-xs"
+                                                    : "border-gray-200/80 dark:border-white/10 bg-[#F8F9FB] dark:bg-[#191d24] text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-white/20"
+                                            }`}
+                                        >
+                                            {pct === 75 && (
+                                                <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 text-[8px] font-extrabold uppercase rounded-full bg-emerald-500 text-white whitespace-nowrap shadow-xs">
+                                                    Default
+                                                </span>
+                                            )}
+                                            <span className="text-xs sm:text-sm font-semibold">{pct}%</span>
+                                            <span className="text-[9px] text-gray-400 dark:text-[#848e9c]">Allocation</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <span className="text-[10px] text-gray-500 dark:text-[#848e9c] leading-tight">
+                                Automatically routes {reinvestPercent}% of daily reward yields into QuantX AI (QTX) automated algorithmic reinvestment.
+                            </span>
                         </div>
 
                     </div>

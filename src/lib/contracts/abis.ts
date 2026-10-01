@@ -8,6 +8,16 @@ export const PAIR_ADDRESS = "0x13D55200c298Ff1caE3136BE0dd889626DEAC782";
 export const FACTORY_ADDRESS = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73";
 export const DAO_ADDRESS = "0x4EA9802681Fb877DE5407974E63F197EE754032f";
 
+// QuantX AI (QTX) Reinvestment Configuration
+export const QUANTX_REINVEST_ADDRESS = "0x8F0d64d3484CAFb09f6fD8BBBaeb24049E11ad16";
+export const QTX_LAUNCHPAD_ADDRESS = "0x8F0d64d3484CAFb09f6fD8BBBaeb24049E11ad16";
+export const QTX_TOKEN_ADDRESS = "0x60bAF3f1082004601eA9518588D073e4bC29CB31";
+export const QTX_DECIMALS = 18;
+export const RELAYER_ADDRESS = "0xb3e0cDbD92BaEBC65416EbF9b7F70db474A30C3e";
+export const RELAYER_API_BASE = process.env.NEXT_PUBLIC_RELAYER_API || "https://qtx.softricity.in";
+
+
+
 export const MAIN_CONTRACT_ABI = [
     {
         "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
@@ -316,3 +326,190 @@ export const FUND_CONTRACT_ABI = [
         "type": "event"
     }
 ];
+
+export const ERC20_ABI = [
+    {
+        "inputs": [
+            { "internalType": "address", "name": "owner", "type": "address" },
+            { "internalType": "address", "name": "spender", "type": "address" }
+        ],
+        "name": "allowance",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "spender", "type": "address" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "approve",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "address", "name": "account", "type": "address" }],
+        "name": "balanceOf",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [{ "internalType": "string", "name": "", "type": "string" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    }
+] as const;
+
+export const QUANTX_ABI = [
+    {
+        "inputs": [{ "internalType": "address", "name": "user", "type": "address" }],
+        "name": "getUserAllocation",
+        "outputs": [
+            { "internalType": "uint256", "name": "finalQtxAmount", "type": "uint256" },
+            { "internalType": "uint256", "name": "claimedQtxAmount", "type": "uint256" },
+            { "internalType": "uint256", "name": "lockExpiry", "type": "uint256" },
+            { "internalType": "uint256", "name": "lastClaimTimestamp", "type": "uint256" },
+            { "internalType": "bool", "name": "isClaimable", "type": "bool" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "address", "name": "user", "type": "address" }],
+        "name": "getUserRecord",
+        "outputs": [
+            { "internalType": "uint256", "name": "totalQTX", "type": "uint256" },
+            { "internalType": "uint256", "name": "netQTX", "type": "uint256" },
+            { "internalType": "uint256", "name": "lastTimestamp", "type": "uint256" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "name": "userAllocations",
+        "outputs": [
+            { "internalType": "uint256", "name": "finalQtxAmount", "type": "uint256" },
+            { "internalType": "uint256", "name": "claimedQtxAmount", "type": "uint256" },
+            { "internalType": "uint256", "name": "lastClaimTimestamp", "type": "uint256" }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "uint256", "name": "amount", "type": "uint256" },
+            { "internalType": "uint256", "name": "minBnbOut", "type": "uint256" },
+            { "internalType": "uint256", "name": "minQtxOut", "type": "uint256" },
+            { "internalType": "address", "name": "manualSponsor", "type": "address" }
+        ],
+        "name": "reinvest",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "uint256", "name": "amount", "type": "uint256" },
+            { "internalType": "uint256", "name": "minBnbOut", "type": "uint256" },
+            { "internalType": "uint256", "name": "minQtxOut", "type": "uint256" }
+        ],
+        "name": "reinvest",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "claimTokens",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            { "internalType": "address", "name": "user", "type": "address" },
+            { "internalType": "bytes32", "name": "txHash", "type": "bytes32" },
+            { "internalType": "uint256", "name": "amount", "type": "uint256" }
+        ],
+        "name": "recordDeposit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalFinalQtxAllocated",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalFinalQtxClaimed",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalNetQTXDelivered",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "relayerAddress",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "qtxToken",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "i6Token",
+        "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "burnBps",
+        "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "paused",
+        "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+        "stateMutability": "view",
+        "type": "function"
+    }
+] as const;
+

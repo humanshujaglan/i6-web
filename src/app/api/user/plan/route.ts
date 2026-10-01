@@ -6,6 +6,7 @@ import { ethers } from "ethers";
 interface PlanRecord {
     plan: "flexible" | "lockin";
     lockinDays?: number;
+    reinvestPercent?: number;
     timestamp: number;
 }
 
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
         plan: "flexible",
         lockinDays: 252,
+        reinvestPercent: 75,
         timestamp: 0,
     });
 }
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
         const address = body?.address?.toLowerCase();
         const plan = body?.plan === "lockin" ? "lockin" : "flexible";
         const lockinDays = Number(body?.lockinDays) || 252;
+        const reinvestPercent = Number(body?.reinvestPercent) || 75;
         const timestamp = Number(body?.timestamp) || Date.now();
 
         if (!address || !ethers.isAddress(address)) {
@@ -72,6 +75,7 @@ export async function POST(request: NextRequest) {
         store[address] = {
             plan,
             lockinDays,
+            reinvestPercent,
             timestamp,
         };
         saveStore(store);

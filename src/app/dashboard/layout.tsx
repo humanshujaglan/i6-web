@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAccount, useDisconnect } from "wagmi";
@@ -49,7 +50,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                          pathname.startsWith("/dashboard/refer");
 
     const hideBottomNav = isActionPage || isModalOpen;
-    const hideHeader = isActionPage;
+    const hideHeader = isActionPage || pathname.startsWith("/dashboard/reinvest");
 
     // Close wallet dropdown when clicking outside
     useEffect(() => {
@@ -346,6 +347,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <Crown size={18} color="currentColor" />
                             <span>Rank & Salary</span>
                         </Link>
+
+                        <Link 
+                            href="/dashboard/reinvest" 
+                            onClick={() => setSidebarOpen(false)}
+                            className={`nav-item ${pathname.startsWith("/dashboard/reinvest") ? "active" : ""}`}
+                        >
+                            <ArrowSwapHorizontal size={18} color="currentColor" />
+                            <span>QuantX AI Reinvest</span>
+                        </Link>
                     </div>
 
                     {/* Theme Toggle in Sidebar */}
@@ -385,6 +395,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             { name: "Home", href: "/dashboard", icon: Home2, exact: true },
                             { name: "Business", href: "/dashboard/business", icon: Briefcase, matchPrefix: ["/dashboard/business", "/dashboard/directs", "/dashboard/downlines"] },
                             { name: "Rank", href: "/dashboard/salary-status", icon: Crown, matchPrefix: ["/dashboard/salary-status"] },
+                            { name: "Reinvest", href: "/dashboard/reinvest", imageIcon: "/3d-icons/swap.webp", matchPrefix: ["/dashboard/reinvest"] },
                         ].map((tab) => {
                             const isActive = tab.exact 
                                 ? pathname === tab.href 
@@ -395,7 +406,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 <Link
                                     key={tab.name}
                                     href={tab.href}
-                                    className={`relative flex flex-row items-center justify-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 rounded-[26px] text-[13px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                                    className={`relative flex flex-row items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-[26px] text-[12px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
                                         isActive
                                             ? (isDark ? "text-[#0b0e14] font-semibold" : "text-[#0072ED] font-normal")
                                             : (isDark ? "text-[#848e9c] hover:text-white font-normal" : "text-white/85 hover:text-white hover:bg-white/10 font-normal")
@@ -416,12 +427,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             transition={{ type: "spring", stiffness: 400, damping: 32 }}
                                         />
                                     )}
-                                    <IconComponent
-                                        size={20}
-                                        color={isActive ? (isDark ? "#0b0e14" : "#0072ED") : "currentColor"}
-                                        variant={isActive ? "Bold" : "Linear"}
-                                        className="relative z-10"
-                                    />
+                                    {tab.imageIcon ? (
+                                        <div className="relative z-10 w-5 h-5 flex items-center justify-center shrink-0">
+                                            <Image
+                                                src={tab.imageIcon}
+                                                alt={tab.name}
+                                                width={20}
+                                                height={20}
+                                                className={`object-contain transition-transform duration-200 ${isActive ? "scale-110 drop-shadow-sm" : "opacity-80"}`}
+                                            />
+                                        </div>
+                                    ) : IconComponent ? (
+                                        <IconComponent
+                                            size={20}
+                                            color={isActive ? (isDark ? "#0b0e14" : "#0072ED") : "currentColor"}
+                                            variant={isActive ? "Bold" : "Linear"}
+                                            className="relative z-10"
+                                        />
+                                    ) : null}
                                     <span className="inline-block leading-none relative z-10 tracking-tight font-normal">{tab.name}</span>
                                 </Link>
                             );
