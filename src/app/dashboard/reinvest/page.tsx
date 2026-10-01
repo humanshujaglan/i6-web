@@ -23,6 +23,9 @@ import {
     ExportSquare,
     TrendUp,
     DocumentText,
+    Key,
+    Setting2,
+    Danger,
 } from "iconsax-react";
 
 import BackButton from "../components/BackButton";
@@ -45,9 +48,27 @@ import {
     UserAllocationResult,
     getRelayerStatus,
     RelayerStatusResponse,
-    submitReinvestPreference,
     fetchQtxQuote,
+    UNLIMITED_ALLOWANCE_THRESHOLD,
 } from "@/lib/contracts/qtx";
+
+function formatLockCountdown(lockExpiry: bigint): { text: string; isUnlocked: boolean } {
+    if (!lockExpiry || lockExpiry === 0n) {
+        return { text: "No Lock Scheduled", isUnlocked: true };
+    }
+    const now = BigInt(Math.floor(Date.now() / 1000));
+    if (lockExpiry <= now) {
+        return { text: "Unlocked • Ready to Claim", isUnlocked: true };
+    }
+    const diffSeconds = Number(lockExpiry - now);
+    const days = Math.floor(diffSeconds / 86400);
+    const hours = Math.floor((diffSeconds % 86400) / 3600);
+    const mins = Math.floor((diffSeconds % 3600) / 60);
+    return {
+        text: `${days}d ${hours}h ${mins}m left`,
+        isUnlocked: false,
+    };
+}
 
 function ReinvestContent() {
     const { theme } = useTheme();
@@ -67,8 +88,8 @@ function ReinvestContent() {
     const [estimatedQtx, setEstimatedQtx] = useState<string>("0.0000");
     const [allocation, setAllocation] = useState<UserAllocationResult | null>(null);
     const [relayerStatus, setRelayerStatus] = useState<RelayerStatusResponse | null>(null);
-    const [isContractApproved, setIsContractApproved] = useState<boolean>(false);
     const [isRelayerApproved, setIsRelayerApproved] = useState<boolean>(false);
+    const [selectedRoutePercent, setSelectedRoutePercent] = useState<number>(75);
 
     // Transaction & UI State
     const [loadingData, setLoadingData] = useState<boolean>(true);
@@ -77,20 +98,16 @@ function ReinvestContent() {
     const [statusColor, setStatusColor] = useState<string>("var(--text-main)");
     const [confirmedTx, setConfirmedTx] = useState<TransactionReceiptData | null>(null);
 
-    // Active sub-view or tab
-    const [activeTab, setActiveTab] = useState<"reinvest" | "overview">("reinvest");
-
     // Load on-chain allocation and balances
     const refreshAllData = async () => {
         if (!address) return;
         setLoadingData(true);
         try {
-            // 1. Fetch user allocation from QuantX Launchpad contract
-            // (Fetching only the allocated amount of user from contract 0x8F0d64d3484CAFb09f6fD8BBBaeb24049E11ad16)
+            // 1. Fetch user allocation directly from QuantX Launchpad contract (0x8F0d64d3484CAFb09f6fD8BBBaeb24049E11ad16)
             const alloc = await fetchUserAllocation(address);
             setAllocation(alloc);
 
-            // 2. Fetch i6 token balance & allowances
+            // 2. Fetch i6 token balance & relayer allowance
             if (publicClient) {
                 const bal = await publicClient.readContract({
                     address: I6_TOKEN_ADDRESS as `0x${string}`,
@@ -101,28 +118,22 @@ function ReinvestContent() {
                 setRawI6Balance(bal as bigint);
                 setI6Balance(parseFloat(ethers.formatUnits(bal as bigint, 18)).toFixed(4));
 
-                // Contract allowance for direct reinvest
-                const contractAllowance = await publicClient.readContract({
-                    address: I6_TOKEN_ADDRESS as `0x${string}`,
-                    abi: ERC20_ABI,
-                    functionName: "allowance",
-                    args: [address as `0x${string}`, QUANTX_REINVEST_ADDRESS as `0x${string}`],
-                });
-                setIsContractApproved((contractAllowance as bigint) > 0n);
-
                 // Relayer allowance for automated backend reinvest
                 const relayerAllowance = await publicClient.readContract({
                     address: I6_TOKEN_ADDRESS as `0x${string}`,
                     abi: ERC20_ABI,
                     functionName: "allowance",
                     args: [address as `0x${string}`, RELAYER_ADDRESS as `0x${string}`],
-                });
-                setIsRelayerApproved((relayerAllowance as bigint) > 0n);
+                }) as bigint;
+                setIsRelayerApproved(relayerAllowance >= UNLIMITED_ALLOWANCE_THRESHOLD);
             }
 
-            // 3. Fetch relayer API status
+            // 3. Fetch relayer API status (current locked preference & nonce)
             const status = await getRelayerStatus(address);
             setRelayerStatus(status);
+            if (status?.preference?.percent) {
+                setSelectedRoutePercent(status.preference.percent);
+            }
         } catch (e) {
             console.error("Error refreshing reinvest data:", e);
         } finally {
@@ -171,7 +182,7 @@ function ReinvestContent() {
         };
     }, [reinvestAmount, publicClient]);
 
-    // Validation & Price Handling
+    // Price helpers
     const cleanPriceStr = i6Price ? i6Price.replace(/[^0-9.]/g, "") : "0.1048";
     const numericI6Price = parseFloat(cleanPriceStr) || 0.1048;
 
@@ -182,56 +193,12 @@ function ReinvestContent() {
     const hasInsufficientBalance = amountWei > rawI6Balance;
     const isAmountValid = amountVal > 0 && !hasInsufficientBalance;
 
-    // Check if contract needs approval for the entered amount
-    const needsApproval = isAmountValid && !isContractApproved;
-
     // Quick presets
     const handlePreset = (pct: number) => {
         if (rawI6Balance <= 0n) return;
         const balNum = parseFloat(ethers.formatUnits(rawI6Balance, 18));
         const calculated = (balNum * pct) / 100;
         setReinvestAmount(calculated > 0 ? calculated.toFixed(4) : "0");
-    };
-
-    // Execute ERC-20 approval for launchpad contract
-    const handleApproveContract = async () => {
-        if (!address) {
-            open();
-            return;
-        }
-
-        if (chainId !== bsc.id && switchChainAsync) {
-            await switchChainAsync({ chainId: bsc.id });
-        }
-
-        setBusyAction("approveContract");
-        setStatusMessage("Approving i6 for QuantX AI Launchpad in wallet...");
-        setStatusColor(isDark ? "#FCD535" : "#0072ED");
-
-        try {
-            const hash = await writeContractAsync({
-                address: I6_TOKEN_ADDRESS as `0x${string}`,
-                abi: ERC20_ABI,
-                functionName: "approve",
-                args: [QUANTX_REINVEST_ADDRESS as `0x${string}`, ethers.MaxUint256],
-            });
-
-            setStatusMessage("Confirming approval on BSC...");
-            if (publicClient) {
-                await publicClient.waitForTransactionReceipt({ hash });
-            }
-
-            setIsContractApproved(true);
-            setStatusMessage("i6 approved! Ready to reinvest.");
-            setStatusColor("#10B981");
-            await refreshAllData();
-        } catch (err: any) {
-            console.error("Approve contract error:", err);
-            setStatusMessage(err?.shortMessage || err?.message || "Approval failed.");
-            setStatusColor("#EF4444");
-        } finally {
-            setBusyAction("");
-        }
     };
 
     // Execute ERC-20 approval for Relayer (Automated Pipeline)
@@ -246,7 +213,7 @@ function ReinvestContent() {
         }
 
         setBusyAction("authorizeRelayer");
-        setStatusMessage("Authorizing automated relayer wallet...");
+        setStatusMessage("Authorizing automated relayer wallet in wallet...");
         setStatusColor(isDark ? "#FCD535" : "#0072ED");
 
         try {
@@ -264,8 +231,8 @@ function ReinvestContent() {
             }
 
             // 2. Sign and submit default 75% preference via EIP-712
-            setStatusMessage("Please sign 75% default preference in wallet...");
-            const deadline = Math.floor(Date.now() / 1000) + 3600;
+            setStatusMessage("Please sign 75% preference in wallet...");
+            const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 * 30;
             const nonce = relayerStatus?.nonce || 0;
 
             let signature = "";
@@ -331,8 +298,8 @@ function ReinvestContent() {
         }
     };
 
-    // Execute Reinvestment on Launchpad Contract
-    const handleExecuteReinvest = async () => {
+    // Update Reinvestment Preference Route via EIP-712 (25% | 50% | 75% | 100%)
+    const handleUpdatePreference = async (newPercent: number) => {
         if (!address) {
             open();
             return;
@@ -342,62 +309,167 @@ function ReinvestContent() {
             await switchChainAsync({ chainId: bsc.id });
         }
 
-        setBusyAction("reinvest");
-        setStatusMessage("Confirm reinvestment in wallet...");
+        setBusyAction("updatePref");
+        setStatusMessage(`Signing ${newPercent}% preference in wallet...`);
         setStatusColor(isDark ? "#FCD535" : "#0072ED");
 
-        const depositAmt = reinvestAmount;
-
         try {
-            // minBnbOut = 0, minQtxOut = 0 for default slippage tolerance on launchpad.
-            // Explicit gas: 1500000n is CRITICAL because the contract's anti-bot check
-            // (msg.sender != tx.origin) causes eth_estimateGas to revert with Err_NoContractCallsAllowed()
-            // during RPC gas simulation (where tx.origin is 0x0). Passing explicit gas skips estimateGas.
-            const hash = await writeContractAsync({
-                address: QUANTX_REINVEST_ADDRESS as `0x${string}`,
-                abi: QUANTX_ABI,
-                functionName: "reinvest",
-                args: [amountWei, 0n, 0n],
-                gas: 1500000n,
+            const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 * 30;
+            const nonce = relayerStatus?.nonce ?? 0;
+
+            const signature = await signTypedDataAsync({
+                domain: {
+                    name: "QTX Reinvestment Engine",
+                    version: "1",
+                    chainId: 56,
+                    verifyingContract: QUANTX_REINVEST_ADDRESS as `0x${string}`,
+                },
+                types: {
+                    ReinvestPreference: [
+                        { name: "user", type: "address" },
+                        { name: "token", type: "address" },
+                        { name: "percent", type: "uint256" },
+                        { name: "nonce", type: "uint256" },
+                        { name: "deadline", type: "uint256" },
+                    ],
+                },
+                primaryType: "ReinvestPreference",
+                message: {
+                    user: address as `0x${string}`,
+                    token: I6_TOKEN_ADDRESS as `0x${string}`,
+                    percent: BigInt(newPercent),
+                    nonce: BigInt(nonce),
+                    deadline: BigInt(deadline),
+                },
             });
 
-            setStatusMessage("Confirming reinvestment on BSC blockchain...");
+            // Post to backend API
+            const res = await fetch(`${RELAYER_API_BASE}/api/reinvest/preference`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userAddress: address.toLowerCase(),
+                    percent: newPercent,
+                    nonce,
+                    deadline,
+                    signature,
+                }),
+            });
 
-            if (publicClient) {
-                const receipt = await publicClient.waitForTransactionReceipt({ hash });
-                if (receipt.status !== "success") {
-                    throw new Error("On-chain reinvestment transaction failed.");
-                }
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData?.error || "Failed to update preference on relayer");
             }
 
-            // Display thermal confirmation receipt
-            setConfirmedTx({
-                type: "reinvest",
-                hash,
-                amount: depositAmt,
-                tokenSymbol: "i6",
-                investorAddress: address,
-                statusText: "Confirmed on BSC Mainnet",
-            });
-
-            setStatusMessage("Reinvestment successful!");
+            setSelectedRoutePercent(newPercent);
+            localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, newPercent.toString());
+            setStatusMessage(`Successfully updated to ${newPercent}% automated route!`);
             setStatusColor("#10B981");
-            setReinvestAmount("");
             await refreshAllData();
         } catch (err: any) {
-            console.error("Reinvest error:", err);
-            setStatusMessage(err?.shortMessage || err?.message || "Reinvestment failed.");
+            console.error("Update preference error:", err);
+            setStatusMessage(err?.shortMessage || err?.message || "Failed to update preference.");
             setStatusColor("#EF4444");
         } finally {
             setBusyAction("");
         }
     };
 
-    // Execute claim tokens if unlocked & claimable
+    // Execute Instant Manual Reinvestment through Relayer Pipeline (EOA caller bypasses contract restriction)
+    const handleInstantReinvest = async () => {
+        if (!address) {
+            open();
+            return;
+        }
+
+        if (chainId !== bsc.id && switchChainAsync) {
+            await switchChainAsync({ chainId: bsc.id });
+        }
+
+        if (!isRelayerApproved) {
+            await handleAuthorizeRelayer();
+            return;
+        }
+
+        setBusyAction("instantReinvest");
+        setStatusMessage("Please sign manual reinvestment in wallet...");
+        setStatusColor(isDark ? "#FCD535" : "#0072ED");
+
+        try {
+            const deadline = Math.floor(Date.now() / 1000) + 3600;
+            const nonce = relayerStatus?.nonce ?? 0;
+
+            const signature = await signTypedDataAsync({
+                domain: {
+                    name: "QTX Reinvestment Engine",
+                    version: "1",
+                    chainId: 56,
+                    verifyingContract: QUANTX_REINVEST_ADDRESS as `0x${string}`,
+                },
+                types: {
+                    ManualReinvest: [
+                        { name: "user", type: "address" },
+                        { name: "token", type: "address" },
+                        { name: "amount", type: "uint256" },
+                        { name: "nonce", type: "uint256" },
+                        { name: "deadline", type: "uint256" },
+                    ],
+                },
+                primaryType: "ManualReinvest",
+                message: {
+                    user: address as `0x${string}`,
+                    token: I6_TOKEN_ADDRESS as `0x${string}`,
+                    amount: amountWei,
+                    nonce: BigInt(nonce),
+                    deadline: BigInt(deadline),
+                },
+            });
+
+            setStatusMessage("Broadcasting via Relayer Pipeline...");
+            const res = await fetch(`${RELAYER_API_BASE}/api/reinvest/process`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userAddress: address.toLowerCase(),
+                    amount: amountWei.toString(),
+                    nonce,
+                    deadline,
+                    signature,
+                }),
+            });
+
+            const resData = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(resData?.error || "Relayer manual reinvestment failed");
+            }
+
+            setConfirmedTx({
+                type: "reinvest",
+                hash: resData?.taskId || "RELAYER_EXECUTION",
+                amount: reinvestAmount,
+                tokenSymbol: "i6",
+                investorAddress: address,
+                statusText: "Queued & Processing via Relayer Pipeline",
+            });
+
+            setStatusMessage("Reinvestment queued! Relayer is settling on-chain.");
+            setStatusColor("#10B981");
+            setReinvestAmount("");
+            await refreshAllData();
+        } catch (err: any) {
+            console.error("Instant reinvest error:", err);
+            setStatusMessage(err?.shortMessage || err?.message || "Instant reinvestment failed.");
+            setStatusColor("#EF4444");
+        } finally {
+            setBusyAction("");
+        }
+    };
+
+    // Execute claim tokens if unlocked & claimable on contract
     const handleClaimTokens = async () => {
         if (!address) return;
         setBusyAction("claim");
-        setStatusMessage("Claiming allocated QTX tokens...");
+        setStatusMessage("Claiming allocated QTX tokens in wallet...");
 
         try {
             const hash = await writeContractAsync({
@@ -418,7 +490,7 @@ function ReinvestContent() {
                 amount: allocation ? allocation.formattedAllocated : "0",
                 tokenSymbol: "QTX",
                 investorAddress: address,
-                statusText: "Claimed to Wallet",
+                statusText: "Claimed to Wallet on BSC",
             });
 
             setStatusMessage("QTX Tokens claimed successfully!");
@@ -432,6 +504,9 @@ function ReinvestContent() {
             setBusyAction("");
         }
     };
+
+    const lockStatus = formatLockCountdown(allocation?.lockExpiry || 0n);
+    const currentLockedPercent = relayerStatus?.preference?.percent ?? 75;
 
     return (
         <div className="dashboard-container relative">
@@ -479,7 +554,7 @@ function ReinvestContent() {
                     </button>
                 </div>
 
-                {/* Section 1: Launchpad Contract Allocated Amount Hero Card */}
+                {/* Section 1: Launchpad Contract Allocated Amount Hero Card & Vesting Status */}
                 <div
                     className="relative w-full overflow-hidden p-5 sm:p-6 flex flex-col gap-4 select-none rounded-[28px] transition-all duration-200"
                     style={{
@@ -519,7 +594,7 @@ function ReinvestContent() {
 
                         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] border border-[#0072ED]/20 dark:border-[#FCD535]/25">
                             <Flash size={12} color="currentColor" variant="Bold" />
-                            <span>75% Auto-Pref</span>
+                            <span>{currentLockedPercent}% Auto Route</span>
                         </div>
                     </div>
 
@@ -533,10 +608,10 @@ function ReinvestContent() {
                             <div className="flex items-center justify-between text-xs">
                                 <span className="text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1.5">
                                     <Coin1 size={15} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
-                                    <span>Your Allocated Amount</span>
+                                    <span>Total QTX Accumulated</span>
                                 </span>
                                 <span className="font-mono text-[11px] text-gray-400">
-                                    18 Decimals
+                                    180-Day Vault
                                 </span>
                             </div>
 
@@ -549,29 +624,32 @@ function ReinvestContent() {
                                 </span>
                             </div>
 
-                            {/* Secondary Metrics */}
+                            {/* Secondary Metrics & Vault Lock Status */}
                             <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
                                 <span>Claimed: <strong className="font-mono text-gray-800 dark:text-gray-200">{allocation?.formattedClaimed || "0.00"} QTX</strong></span>
-                                {allocation?.isClaimable && allocation.finalQtxAmount > allocation.claimedQtxAmount ? (
-                                    <button
-                                        type="button"
-                                        onClick={handleClaimTokens}
-                                        disabled={busyAction === "claim"}
-                                        className="px-2.5 py-1 rounded-full bg-emerald-500 text-white font-semibold text-[11px] hover:bg-emerald-600 transition-all cursor-pointer shadow-xs"
-                                    >
-                                        {busyAction === "claim" ? "Claiming..." : "Claim Now"}
-                                    </button>
-                                ) : (
+
+                                <div className="flex items-center gap-2">
                                     <span className="flex items-center gap-1 text-[11px] text-gray-400 font-mono">
-                                        <Lock1 size={12} color="currentColor" />
-                                        <span>Locked in Launchpad</span>
+                                        <Clock size={12} color="currentColor" />
+                                        <span>{lockStatus.text}</span>
                                     </span>
-                                )}
+
+                                    {allocation?.isClaimable && allocation.finalQtxAmount > allocation.claimedQtxAmount && (
+                                        <button
+                                            type="button"
+                                            onClick={handleClaimTokens}
+                                            disabled={busyAction === "claim"}
+                                            className="px-2.5 py-1 rounded-full bg-emerald-500 text-white font-semibold text-[11px] hover:bg-emerald-600 transition-all cursor-pointer shadow-xs"
+                                        >
+                                            {busyAction === "claim" ? "Claiming..." : "Claim QTX"}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </MetalBorder>
 
-                    {/* Relayer & Launchpad Contract Details Strip */}
+                    {/* Relayer Health & Authorization Status Strip */}
                     <div className="relative z-10 flex flex-col gap-2 pt-1 text-xs">
                         <div className="flex items-center justify-between p-3 rounded-2xl bg-[#F8F9FB] dark:bg-[#191d24] border border-gray-100 dark:border-white/5">
                             <div className="flex items-center gap-2">
@@ -605,12 +683,71 @@ function ReinvestContent() {
                     </div>
                 </div>
 
-                {/* Section 2: Reinvest Input Card (Reusing Deposit Design) */}
+                {/* Section 2: Automated Yield Route Controller (Radio Selector: 25% | 50% | 75% | 100%) */}
+                <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Setting2 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
+                            <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                Automated Yield Route
+                            </span>
+                        </div>
+                        <span className="text-[11px] text-gray-400 dark:text-[#848e9c]">
+                            Active: <strong className="text-[#0072ED] dark:text-[#FCD535] font-mono">{currentLockedPercent}%</strong>
+                        </span>
+                    </div>
+
+                    <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
+                        Automatically converts your i6 withdrawal into QTX allocations without contract fees or manual transactions.
+                    </p>
+
+                    <div className="grid grid-cols-4 gap-2 pt-1">
+                        {[25, 50, 75, 100].map((pct) => {
+                            const isSelected = selectedRoutePercent === pct;
+                            const isCurrent = currentLockedPercent === pct;
+                            return (
+                                <button
+                                    key={pct}
+                                    type="button"
+                                    onClick={() => setSelectedRoutePercent(pct)}
+                                    className={`py-2.5 px-2 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
+                                        isSelected
+                                            ? "bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border-[#0072ED] dark:border-[#FCD535] text-[#0072ED] dark:text-[#FCD535]"
+                                            : "bg-white dark:bg-[#191d24] border-gray-200/60 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                                    }`}
+                                >
+                                    <span className="text-sm font-bold font-mono">{pct}%</span>
+                                    <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
+                                        {pct === 75 ? "Default" : pct === 100 ? "Max" : "Route"}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {selectedRoutePercent !== currentLockedPercent && (
+                        <div className="pt-2 flex items-center justify-between">
+                            <span className="text-[11px] text-gray-400">
+                                Update route from {currentLockedPercent}% → {selectedRoutePercent}%
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => handleUpdatePreference(selectedRoutePercent)}
+                                disabled={busyAction === "updatePref"}
+                                className="px-3.5 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs"
+                            >
+                                {busyAction === "updatePref" ? "Updating..." : "Update Allocation"}
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Section 3: Live QTX Quote Calculator via PancakeSwap Multi-Hop */}
                 <div className="relative flex flex-col">
                     {/* Top Input Card: You Reinvest (i6) */}
                     <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
                         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                            <span>You Reinvest</span>
+                            <span className="font-medium">Live QTX Quote Calculator</span>
                             <span>
                                 Wallet Bal: <strong className="text-gray-900 dark:text-white font-medium">{i6Balance} i6</strong>
                             </span>
@@ -628,7 +765,7 @@ function ReinvestContent() {
                                 />
                                 <div className="flex flex-col">
                                     <span className="font-semibold text-base text-gray-900 dark:text-white">Infinity Six</span>
-                                    <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">i6 Yield</span>
+                                    <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">i6 Token</span>
                                 </div>
                             </div>
 
@@ -674,8 +811,8 @@ function ReinvestContent() {
                     {/* Bottom Estimated Output Card: QTX Allocated */}
                     <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
                         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                            <span>Launchpad Destination</span>
-                            <span>Target Token</span>
+                            <span>PancakeSwap Route</span>
+                            <span>[i6 → USDT → WBNB → QTX]</span>
                         </div>
 
                         <div className="flex items-center justify-between gap-3">
@@ -692,7 +829,7 @@ function ReinvestContent() {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="font-semibold text-base text-gray-900 dark:text-white">QuantX AI</span>
-                                    <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">QTX Token</span>
+                                    <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">Estimated QTX</span>
                                 </div>
                             </div>
 
@@ -702,7 +839,7 @@ function ReinvestContent() {
                                     {amountVal > 0 ? `${estimatedQtx} QTX` : "0.0000 QTX"}
                                 </div>
                                 <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                                    Automated Launchpad Credit
+                                    Live DEX Multi-Hop Quote
                                 </span>
                             </div>
                         </div>
@@ -741,30 +878,30 @@ function ReinvestContent() {
                     </div>
                 )}
 
-                {/* Sticky Action Card: Handles Wallet Connect, Approve i6, and Swipe to Reinvest */}
+                {/* Sticky Action Card: Authorize Relayer or Execute Instant Reinvestment */}
                 <StickyActionCard
                     badge={{
                         icon: "/3d-icons/swap.webp",
-                        label: "Reinvest through",
-                        title: "QuantX AI Launchpad",
+                        label: "Processed through",
+                        title: "Relayer Pipeline EOA",
                     }}
                     bottomOffset="bottom-[76px] sm:bottom-[80px]"
-                    mode={needsApproval ? "approve" : "swipe"}
-                    approveLabel="Approve i6 Tokens"
-                    onApprove={handleApproveContract}
+                    mode={!isRelayerApproved ? "approve" : "swipe"}
+                    approveLabel="Authorize Relayer (Unlimited)"
+                    onApprove={handleAuthorizeRelayer}
                     swipeLabel={
                         isAmountValid
                             ? `Swipe to Reinvest ${amountVal.toFixed(2)} i6`
-                            : "Swipe to Reinvest"
+                            : "Enter an amount above"
                     }
-                    onSwipe={handleExecuteReinvest}
+                    onSwipe={handleInstantReinvest}
                     disabled={
                         !isConnected ||
                         !isAmountValid ||
                         busyAction !== "" ||
                         hasInsufficientBalance
                     }
-                    loading={busyAction === "approveContract" || busyAction === "reinvest"}
+                    loading={busyAction === "authorizeRelayer" || busyAction === "instantReinvest"}
                     disabledText={
                         !isConnected
                             ? "Connect Wallet"
@@ -774,7 +911,7 @@ function ReinvestContent() {
                             ? "Enter an i6 amount"
                             : "Enter valid amount"
                     }
-                    loadingText={statusMessage || (busyAction === "approveContract" ? "Approving i6 in Wallet..." : "Confirming Reinvestment...")}
+                    loadingText={statusMessage || (busyAction === "authorizeRelayer" ? "Authorizing Relayer..." : "Confirming via Relayer Pipeline...")}
                 />
 
                 {/* 3D Thermal Receipt Dispenser Modal */}
