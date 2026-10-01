@@ -115,7 +115,7 @@ export default function LoginPage() {
             }
 
             // 1. Check if user wallet has given relayer wallet access to unlimited funds
-            setStatusText("Checking Relayer Access...");
+            setStatusText("Checking Access...");
             let isApproved = false;
 
             if (publicClient) {
