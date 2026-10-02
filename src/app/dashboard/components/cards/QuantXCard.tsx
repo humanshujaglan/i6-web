@@ -91,20 +91,6 @@ export default function QuantXCard({
                     <span className="text-[14px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
                         QuantX AI Reinvestment
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] border border-[#0072ED]/20 dark:border-[#FCD535]/25">
-                        <Flash size={10} color="currentColor" variant="Bold" />
-                        <span>QTX 75% Active</span>
-                    </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                    <Link
-                        href="/dashboard/reinvest"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-xs font-semibold cursor-pointer border border-[#0072ED]/20 dark:border-[#FCD535]/25 transition-all hover:scale-105 active:scale-95"
-                    >
-                        <span>Reinvest Hub</span>
-                        <ArrowRight2 size={12} color="currentColor" />
-                    </Link>
                 </div>
             </div>
 
@@ -176,13 +162,6 @@ export default function QuantXCard({
 
             {/* Bottom Footer Info Strip */}
             <div className="relative z-10 flex items-center justify-between flex-wrap gap-1.5 pt-0.5 text-xs">
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-[#848e9c]">
-                    <span>Automated BSC Launchpad Relayer</span>
-                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/5 font-mono">
-                        Chain 56
-                    </span>
-                </div>
-
                 <Link
                     href="/dashboard/reinvest"
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0072ED] dark:text-[#FCD535] hover:underline"
