@@ -385,7 +385,7 @@ export default function QuantXLaunchModal({
                         <div className="p-2.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 flex flex-col items-center gap-1">
                             <ShieldTick size={16} color="currentColor" className="text-amber-500" />
                             <span className="text-[10px] font-bold text-gray-800 dark:text-gray-200">Timelock</span>
-                            <span className="text-[9px] text-gray-400">3-Year Vault</span>
+                            <span className="text-[9px] text-gray-400">6-Months Vault</span>
                         </div>
                     </motion.div>
 
