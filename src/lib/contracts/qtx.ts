@@ -9,7 +9,9 @@ import {
     QUANTX_ABI,
     ERC20_ABI,
     RELAYER_ADDRESS,
-    RELAYER_API_BASE
+    RELAYER_API_BASE,
+    QTX_TIMELOCK_ADDRESS,
+    QTX_TIMELOCK_ABI,
 } from "./abis";
 
 export const BSC_RPC_DEFAULT = process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.org";
@@ -326,3 +328,72 @@ export async function submitReinvestPreference(
 
     return { success: true, preference: payload };
 }
+
+export interface TimelockInfo {
+    releaseTime: number;
+    timelockDuration: number;
+    trancheDuration: number;
+    totalAllocatedToUsers: string;
+    totalReleasedToUsers: string;
+    unallocatedCapacity: string;
+    unlockedBps: number;
+}
+
+export async function fetchQtxTimelockInfo(
+    publicClientOrProvider?: any
+): Promise<TimelockInfo> {
+    try {
+        const provider = publicClientOrProvider || new ethers.JsonRpcProvider(BSC_RPC_DEFAULT);
+        const contract = new ethers.Contract(QTX_TIMELOCK_ADDRESS, QTX_TIMELOCK_ABI, provider);
+
+        const now = Math.floor(Date.now() / 1000);
+        const [
+            releaseTimeRaw,
+            timelockDurationRaw,
+            trancheDurationRaw,
+            totalAllocatedRaw,
+            totalReleasedRaw,
+            unallocatedCapacityRaw,
+            unlockedBpsRaw
+        ] = await Promise.all([
+            contract.releaseTime().catch(() => 1806426968n),
+            contract.TIMELOCK_DURATION().catch(() => 15552000n),
+            contract.TRANCHE_DURATION().catch(() => 7776000n),
+            contract.totalAllocatedToUsers().catch(() => 0n),
+            contract.totalReleasedToUsers().catch(() => 0n),
+            contract.unallocatedCapacity().catch(() => 0n),
+            contract.unlockedBps(now).catch(() => 0n),
+        ]);
+
+        return {
+            releaseTime: Number(releaseTimeRaw),
+            timelockDuration: Number(timelockDurationRaw),
+            trancheDuration: Number(trancheDurationRaw),
+            totalAllocatedToUsers: parseFloat(ethers.formatUnits(totalAllocatedRaw, 18)).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 4,
+            }),
+            totalReleasedToUsers: parseFloat(ethers.formatUnits(totalReleasedRaw, 18)).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 4,
+            }),
+            unallocatedCapacity: parseFloat(ethers.formatUnits(unallocatedCapacityRaw, 18)).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }),
+            unlockedBps: Number(unlockedBpsRaw),
+        };
+    } catch (e) {
+        console.warn("fetchQtxTimelockInfo error:", e);
+        return {
+            releaseTime: 1806426968,
+            timelockDuration: 15552000,
+            trancheDuration: 7776000,
+            totalAllocatedToUsers: "0.00",
+            totalReleasedToUsers: "0.00",
+            unallocatedCapacity: "0.00",
+            unlockedBps: 0,
+        };
+    }
+}
+

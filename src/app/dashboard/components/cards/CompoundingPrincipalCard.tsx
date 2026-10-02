@@ -147,7 +147,7 @@ export default function CompoundingPrincipalCard({
             </div>
 
             {/* Bottom Yield & Compound Stats Strip */}
-            <div className="relative z-10 flex items-center justify-between flex-wrap gap-1.5 pt-0.5 text-xs">
+            {/* <div className="relative z-10 flex items-center justify-between flex-wrap gap-1.5 pt-0.5 text-xs">
                 <div className="flex items-center gap-1.5 text-emerald-600 dark:text-[#FCD535] font-medium">
                     <span>ROI with compounding: +${dailyEarningOnPrincipal.toFixed(2)}/day</span>
                     {extraDailyGain > 0.01 && (
@@ -162,7 +162,7 @@ export default function CompoundingPrincipalCard({
                         +${profitAmount.toFixed(2)} profit added
                     </span>
                 )}
-            </div>
+            </div> */}
         </div>
     );
 }

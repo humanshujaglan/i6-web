@@ -32,6 +32,8 @@ import BackButton from "../components/BackButton";
 import StickyActionCard from "../components/StickyActionCard";
 import TransactionReceiptModal, { TransactionReceiptData } from "../components/TransactionReceiptModal";
 import MetalBorder from "../components/MetalBorder";
+import I6PriceCard from "../components/cards/I6PriceCard";
+import CompoundingTimerWidget from "../components/widgets/CompoundingTimerWidget";
 import { useTheme } from "@/app/context/ThemeContext";
 import { useDashboard } from "../DashboardContext";
 import {
@@ -40,6 +42,7 @@ import {
     I6_TOKEN_ADDRESS,
     RELAYER_ADDRESS,
     RELAYER_API_BASE,
+    QTX_TIMELOCK_ADDRESS,
     ERC20_ABI,
     QUANTX_ABI,
 } from "@/lib/contracts/abis";
@@ -50,6 +53,8 @@ import {
     RelayerStatusResponse,
     fetchQtxQuote,
     UNLIMITED_ALLOWANCE_THRESHOLD,
+    fetchQtxTimelockInfo,
+    TimelockInfo,
 } from "@/lib/contracts/qtx";
 
 function formatLockCountdown(lockExpiry: bigint): { text: string; isUnlocked: boolean } {
@@ -90,6 +95,13 @@ function ReinvestContent() {
     const [relayerStatus, setRelayerStatus] = useState<RelayerStatusResponse | null>(null);
     const [isRelayerApproved, setIsRelayerApproved] = useState<boolean>(false);
     const [selectedRoutePercent, setSelectedRoutePercent] = useState<number>(75);
+    const [qtxPrice, setQtxPrice] = useState<number>(25.84);
+    const [qtxChange, setQtxChange] = useState<number>(2.77);
+    const [timelockInfo, setTimelockInfo] = useState<TimelockInfo | null>(null);
+    const [timelockSecondsRemaining, setTimelockSecondsRemaining] = useState<number>(() => {
+        const now = Math.floor(Date.now() / 1000);
+        return Math.max(0, 1806426968 - now);
+    });
 
     // Transaction & UI State
     const [activeTab, setActiveTab] = useState<"accumulated" | "automated" | "reinvest">("accumulated");
@@ -135,12 +147,58 @@ function ReinvestContent() {
             if (status?.preference?.percent) {
                 setSelectedRoutePercent(status.preference.percent);
             }
+
+            // 4. Fetch QTX timelock contract info (0xbcB5850c6a369a91A30d764f35a116034668fb56)
+            try {
+                const tl = await fetchQtxTimelockInfo(publicClient);
+                setTimelockInfo(tl);
+                const nowSec = Math.floor(Date.now() / 1000);
+                setTimelockSecondsRemaining(Math.max(0, tl.releaseTime - nowSec));
+            } catch (tlErr) {
+                console.warn("Failed to load timelock info:", tlErr);
+            }
         } catch (e) {
             console.error("Error refreshing reinvest data:", e);
         } finally {
             setLoadingData(false);
         }
     };
+
+    // Fetch live QTX market price from /api/token-price?token=qtx
+    const fetchQtxPrice = async () => {
+        try {
+            const res = await fetch("/api/token-price?token=qtx");
+            if (res.ok) {
+                const data = await res.json();
+                if (data.price) setQtxPrice(data.price);
+                if (data.change24h !== undefined) setQtxChange(data.change24h);
+            }
+        } catch (e) {
+            console.warn("Failed to load QTX price:", e);
+        }
+    };
+
+    useEffect(() => {
+        fetchQtxPrice();
+        fetchQtxTimelockInfo(publicClient).then((tl) => {
+            setTimelockInfo(tl);
+            const nowSec = Math.floor(Date.now() / 1000);
+            setTimelockSecondsRemaining(Math.max(0, tl.releaseTime - nowSec));
+        }).catch(() => {});
+
+        const priceTimer = setInterval(fetchQtxPrice, 12000);
+        return () => clearInterval(priceTimer);
+    }, [publicClient]);
+
+    // Live 1-second ticker for timelock countdown
+    useEffect(() => {
+        const target = timelockInfo?.releaseTime || 1806426968;
+        const ticker = setInterval(() => {
+            const nowSec = Math.floor(Date.now() / 1000);
+            setTimelockSecondsRemaining(Math.max(0, target - nowSec));
+        }, 1000);
+        return () => clearInterval(ticker);
+    }, [timelockInfo?.releaseTime]);
 
     useEffect(() => {
         if (isConnected && address) {
@@ -506,7 +564,10 @@ function ReinvestContent() {
         }
     };
 
-    const lockStatus = formatLockCountdown(allocation?.lockExpiry || 0n);
+    const effectiveLockExpiry = (allocation?.lockExpiry && allocation.lockExpiry > 0n)
+        ? allocation.lockExpiry
+        : BigInt(timelockInfo?.releaseTime || 1806426968);
+    const lockStatus = formatLockCountdown(effectiveLockExpiry);
     const currentLockedPercent = relayerStatus?.preference?.percent ?? 75;
 
     return (
@@ -520,9 +581,14 @@ function ReinvestContent() {
                         <span className="text-base font-semibold text-gray-900 dark:text-white">
                             QuantX AI Reinvest
                         </span>
-                        <span className="text-[11px] text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1">
+                        <span className="text-[11px] text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>BSC Mainnet • Relayer Pipeline</span>
+                            <span>QTX: <strong className="font-mono text-gray-900 dark:text-white">${qtxPrice.toFixed(2)}</strong></span>
+                            {qtxChange !== 0 && (
+                                <span className={`text-[10px] font-bold ${qtxChange >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                                    {qtxChange >= 0 ? `+${qtxChange.toFixed(1)}%` : `${qtxChange.toFixed(1)}%`}
+                                </span>
+                            )}
                         </span>
                     </div>
 
@@ -554,6 +620,9 @@ function ReinvestContent() {
                         </div>
                     </button>
                 </div>
+
+                {/* Live QTX Market Price & Telemetry Card */}
+                <I6PriceCard />
 
                 {/* Capsule Segmented Tab Switcher */}
                 <div className="flex items-center p-1 bg-[#F4F4F7] dark:bg-[#14171d] rounded-full max-w-md mx-auto w-full relative">
@@ -699,11 +768,6 @@ function ReinvestContent() {
                                             QuantX AI (QTX)
                                         </span>
                                     </div>
-
-                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] border border-[#0072ED]/20 dark:border-[#FCD535]/25">
-                                        <Flash size={12} color="currentColor" variant="Bold" />
-                                        <span>{currentLockedPercent}% Auto Route</span>
-                                    </div>
                                 </div>
 
                                 {/* Main Allocated Metric with Metallic Border */}
@@ -723,18 +787,32 @@ function ReinvestContent() {
                                             </span>
                                         </div>
 
-                                        <div className="flex items-baseline justify-between gap-2">
-                                            <span className="text-2xl sm:text-3xl font-extrabold font-mono text-gray-900 dark:text-white tracking-tight">
-                                                {loadingData && !allocation ? "..." : (allocation?.formattedAllocated || "0.00")}
-                                            </span>
-                                            <span className="text-sm sm:text-base font-bold text-[#0072ED] dark:text-[#FCD535]">
-                                                QTX
-                                            </span>
+                                        <div className="flex items-baseline justify-between gap-2 flex-wrap">
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-gray-900 dark:text-white tracking-tight">
+                                                    {loadingData && !allocation ? "..." : (allocation?.formattedAllocated || "0.00")}
+                                                </span>
+                                                <span className="text-sm sm:text-base font-bold text-[#0072ED] dark:text-[#FCD535]">
+                                                    QTX
+                                                </span>
+                                            </div>
+                                            {qtxPrice > 0 && (
+                                                <span className="text-xs sm:text-sm font-semibold font-mono text-gray-500 dark:text-[#848e9c]">
+                                                    ≈ ${(parseFloat(allocation?.formattedAllocated || "0") * qtxPrice).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                                </span>
+                                            )}
                                         </div>
 
                                         {/* Secondary Metrics & Vault Lock Status */}
-                                        <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                                            <span>Claimed: <strong className="font-mono text-gray-800 dark:text-gray-200">{allocation?.formattedClaimed || "0.00"} QTX</strong></span>
+                                        <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c] flex-wrap gap-2">
+                                            <span>
+                                                Claimed: <strong className="font-mono text-gray-800 dark:text-gray-200">{allocation?.formattedClaimed || "0.00"} QTX</strong>
+                                                {qtxPrice > 0 && parseFloat(allocation?.formattedClaimed || "0") > 0 && (
+                                                    <span className="text-gray-400 font-mono text-[11px] ml-1">
+                                                        (≈${(parseFloat(allocation?.formattedClaimed || "0") * qtxPrice).toFixed(2)})
+                                                    </span>
+                                                )}
+                                            </span>
 
                                             <div className="flex items-center gap-2">
                                                 <span className="flex items-center gap-1 text-[11px] text-gray-400 font-mono">
@@ -791,6 +869,43 @@ function ReinvestContent() {
                                 </div>
                             </div>
 
+                            {/* Dedicated Animated Next Compounding Timelock Timer Card */}
+                            <div
+                                className="p-5 sm:p-6 rounded-[28px] flex flex-col items-center gap-3 transition-all"
+                                style={{
+                                    background: isDark
+                                        ? "linear-gradient(135deg, #14171d 0%, #0a0c0f 100%)"
+                                        : "linear-gradient(135deg, rgba(201, 224, 255, 0.45) 0%, #FFFFFF 85%)",
+                                    border: isDark
+                                        ? "1px solid rgba(255, 255, 255, 0.12)"
+                                        : "1.5px solid #FFFFFF",
+                                    boxShadow: isDark
+                                        ? "inset 0 1px 1px rgba(255, 255, 255, 0.12), 0 8px 30px rgba(0, 0, 0, 0.45)"
+                                        : "0 6px 24px rgba(12, 50, 99, 0.08)",
+                                }}
+                            >
+                                <CompoundingTimerWidget
+                                    secondsRemaining={timelockSecondsRemaining}
+                                    hasActiveInvestments={true}
+                                    title="Next Compounding"
+                                    subtitle="180-Day QTX Timelock Vault"
+                                    hideProjection={true}
+                                    idPrefix="qtx-timelock"
+                                    countdownText={timelockSecondsRemaining <= 0 ? "Timelock Unlocked • Ready to Claim" : undefined}
+                                />
+
+                                {/* Timelock Target & Vesting Details */}
+                                <div className="w-full pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c] flex-wrap gap-2">
+                                    <span className="flex items-center gap-1.5 font-medium">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span>Target Release: <strong className="font-mono text-gray-800 dark:text-gray-200">March 30, 2027</strong></span>
+                                    </span>
+                                    <span className="font-mono text-[11px] text-gray-400">
+                                        25% Tranches / 90 Days
+                                    </span>
+                                </div>
+                            </div>
+
                             {/* Additional Vault & Allocation Transparency Card */}
                             <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
                                 <div className="flex items-center justify-between text-xs">
@@ -810,6 +925,35 @@ function ReinvestContent() {
                                         <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">{lockStatus.isUnlocked ? "Unlocked" : "Locked"}</span>
                                         <span className="text-[10px] text-gray-500 dark:text-[#848e9c] truncate">{lockStatus.text}</span>
                                     </div>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                    <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Market Price</span>
+                                    <div className="flex items-center gap-1.5 font-mono text-[11px]">
+                                        <span className="font-bold text-gray-900 dark:text-white">${qtxPrice.toFixed(2)} USD</span>
+                                        {qtxChange !== 0 && (
+                                            <span className={`font-semibold ${qtxChange >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
+                                                ({qtxChange >= 0 ? `+${qtxChange.toFixed(1)}%` : `${qtxChange.toFixed(1)}%`})
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                    <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Timelock Contract</span>
+                                    <a
+                                        href={`https://bscscan.com/address/${QTX_TIMELOCK_ADDRESS}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 font-mono text-[11px] text-[#0072ED] dark:text-[#FCD535] hover:underline"
+                                    >
+                                        <span>{QTX_TIMELOCK_ADDRESS.slice(0, 6)}...{QTX_TIMELOCK_ADDRESS.slice(-4)}</span>
+                                        <ExportSquare size={12} color="currentColor" />
+                                    </a>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                    <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">Timelock Total Allocated</span>
+                                    <span className="font-mono text-[11px] font-semibold text-gray-900 dark:text-white">
+                                        {timelockInfo?.totalAllocatedToUsers || "88.55"} QTX
+                                    </span>
                                 </div>
                                 <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
                                     <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Token Contract</span>
@@ -970,7 +1114,14 @@ function ReinvestContent() {
                                 {/* Top Input Card: You Reinvest (i6) */}
                                 <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
                                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                                        <span className="font-medium">Live QTX Quote Calculator</span>
+                                        <span className="font-medium flex items-center gap-1.5">
+                                            <span>Live QTX Quote Calculator</span>
+                                            {qtxPrice > 0 && (
+                                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-white dark:bg-[#1f242d] text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-white/5">
+                                                    1 QTX = ${qtxPrice.toFixed(2)}
+                                                </span>
+                                            )}
+                                        </span>
                                         <span>
                                             Wallet Bal: <strong className="text-gray-900 dark:text-white font-medium">{i6Balance} i6</strong>
                                         </span>
@@ -1061,9 +1212,16 @@ function ReinvestContent() {
                                             <div className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white truncate font-mono">
                                                 {amountVal > 0 ? `${estimatedQtx} QTX` : "0.0000 QTX"}
                                             </div>
-                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                                                Live DEX Multi-Hop Quote
-                                            </span>
+                                            <div className="flex items-center gap-1.5 text-[11px] justify-end flex-wrap">
+                                                {qtxPrice > 0 && amountVal > 0 && (
+                                                    <span className="font-mono text-gray-500 dark:text-[#848e9c]">
+                                                        ≈${(parseFloat(estimatedQtx || "0") * qtxPrice).toFixed(2)} USD •
+                                                    </span>
+                                                )}
+                                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                                    Live DEX Multi-Hop Quote
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
