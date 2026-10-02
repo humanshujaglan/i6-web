@@ -104,20 +104,13 @@ export default function QuantXCard({
                 />
             </div>
 
-            {/* Header: Title and View Button */}
-            <div className="flex items-center justify-between gap-2 relative z-10 pl-16 sm:pl-20 min-h-[40px]">
+            {/* Header: Title */}
+            <div className="flex items-center justify-between gap-2 relative z-10 pl-16 sm:pl-20 min-h-[36px]">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                     <span className="text-[18px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
                         QuantX AI Reinvestment
                     </span>
                 </div>
-
-                <Link
-                    href="/dashboard/reinvest"
-                    className="px-4 py-1.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
-                >
-                    View
-                </Link>
             </div>
 
             {/* Connected 2-Pill Exchange Layout */}
@@ -184,6 +177,24 @@ export default function QuantXCard({
                 >
                     <ArrowSwapHorizontal size={14} color="currentColor" />
                 </div>
+            </div>
+
+            {/* Bottom Footer Info Strip: Relayer status & View Button on Bottom Right */}
+            <div className="relative z-10 flex items-center justify-between flex-wrap gap-2 pt-0.5 text-xs">
+                <div className="flex items-center gap-1.5 text-gray-500 dark:text-[#848e9c]">
+                    <span className="hidden sm:inline">Automated BSC Launchpad Relayer</span>
+                    <span className="sm:hidden">Launchpad Relayer</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 font-mono">
+                        Chain 56
+                    </span>
+                </div>
+
+                <Link
+                    href="/dashboard/reinvest"
+                    className="px-4 py-1.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0 ml-auto"
+                >
+                    View
+                </Link>
             </div>
         </div>
     );
