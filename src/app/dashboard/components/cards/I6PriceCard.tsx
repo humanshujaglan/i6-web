@@ -102,8 +102,8 @@ export const I6PriceCard = memo(function I6PriceCard({
 
         const w = 400;
         const h = 75;
-        const padTop = 6;
-        const padBottom = 8;
+        const padTop = 8;
+        const padBottom = 12;
         const padX = 0;
 
         const min = Math.min(...raw);
@@ -123,7 +123,7 @@ export const I6PriceCard = memo(function I6PriceCard({
             const p1 = pts[i + 1];
             const cpx1 = p0.x + (p1.x - p0.x) / 2;
             const cpx2 = cpx1;
-            stroke += ` C ${cpx1.toFixed(1)} ${p0.y.toFixed(1)}, ${cpx2.toFixed(1)} ${p1.y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.x.toFixed(1)}`;
+            stroke += ` C ${cpx1.toFixed(1)} ${p0.y.toFixed(1)}, ${cpx2.toFixed(1)} ${p1.y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
         }
 
         const last = pts[pts.length - 1];
@@ -174,19 +174,19 @@ export const I6PriceCard = memo(function I6PriceCard({
                 {/* Top Right Corner: Liquidity & 24h Volume */}
                 <div className="flex items-center gap-5 sm:gap-7 text-right">
                     <div className="flex flex-col">
-                        <span className="text-[11px] sm:text-xs font-medium text-gray-400">
+                        <span className="text-xs sm:text-[13px] font-semibold text-gray-400">
                             Liquidity
                         </span>
-                        <span className="text-base sm:text-lg font-bold text-white font-mono tracking-tight mt-0.5">
+                        <span className="text-lg sm:text-xl font-bold text-white font-mono tracking-tight mt-0.5">
                             {effectiveLiquidity}
                         </span>
                     </div>
 
                     <div className="flex flex-col">
-                        <span className="text-[11px] sm:text-xs font-medium text-gray-400">
+                        <span className="text-xs sm:text-[13px] font-semibold text-gray-400">
                             24h Volume
                         </span>
-                        <span className="text-base sm:text-lg font-bold text-white font-mono tracking-tight mt-0.5">
+                        <span className="text-lg sm:text-xl font-bold text-white font-mono tracking-tight mt-0.5">
                             {effectiveVolume}
                         </span>
                     </div>

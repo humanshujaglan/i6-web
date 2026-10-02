@@ -108,6 +108,7 @@ function ReinvestContent() {
     const [relayerStatus, setRelayerStatus] = useState<RelayerStatusResponse | null>(null);
     const [isRelayerApproved, setIsRelayerApproved] = useState<boolean>(false);
     const [selectedRoutePercent, setSelectedRoutePercent] = useState<number>(75);
+    const [selectedUpgradePercent, setSelectedUpgradePercent] = useState<number | null>(null);
     const [qtxPrice, setQtxPrice] = useState<number>(25.84);
     const [qtxChange, setQtxChange] = useState<number>(2.77);
     const [timelockInfo, setTimelockInfo] = useState<TimelockInfo | null>(null);
@@ -117,7 +118,7 @@ function ReinvestContent() {
     });
 
     // Transaction & UI State
-    const [activeTab, setActiveTab] = useState<"accumulated" | "automated" | "reinvest">("accumulated");
+    const [activeTab, setActiveTab] = useState<"accumulated" | "reinvest">("accumulated");
     const [loadingData, setLoadingData] = useState<boolean>(true);
     const [busyAction, setBusyAction] = useState<string>("");
     const [statusMessage, setStatusMessage] = useState<string>("");
@@ -434,6 +435,7 @@ function ReinvestContent() {
             }
 
             setSelectedRoutePercent(newPercent);
+            setSelectedUpgradePercent(null);
             localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, newPercent.toString());
             setStatusMessage(`Successfully updated to ${newPercent}% automated route!`);
             setStatusColor("#10B981");
@@ -582,6 +584,10 @@ function ReinvestContent() {
         : BigInt(timelockInfo?.releaseTime || 1806426968);
     const lockStatus = formatLockCountdown(effectiveLockExpiry);
     const currentLockedPercent = relayerStatus?.preference?.percent ?? 75;
+    const availableUpgradeTiers = [25, 50, 75, 100].filter((pct) => pct > currentLockedPercent);
+    const targetUpgradePercent = (selectedUpgradePercent && availableUpgradeTiers.includes(selectedUpgradePercent))
+        ? selectedUpgradePercent
+        : (availableUpgradeTiers[0] ?? currentLockedPercent);
 
     return (
         <div className="dashboard-container relative">
@@ -592,10 +598,10 @@ function ReinvestContent() {
 
                     <div className="flex flex-col items-center">
                         <span className="text-base font-semibold text-gray-900 dark:text-white">
-                            QuantX AI Reinvestment
+                            QuantX AI
                         </span>
                         <span className="text-[11px] text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             <span>QTX: <strong className="font-mono text-gray-900 dark:text-white">${qtxPrice.toFixed(2)}</strong></span>
                             {qtxChange !== 0 && (
                                 <span className={`text-[10px] font-bold ${qtxChange >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
@@ -638,7 +644,7 @@ function ReinvestContent() {
                 {/* <I6PriceCard /> */}
 
                 {/* Capsule Segmented Tab Switcher */}
-                <div className="flex items-center p-1 bg-[#F4F4F7] dark:bg-[#14171d] rounded-full max-w-md mx-auto w-full relative">
+                <div className="flex items-center p-1 bg-[#F4F4F7] dark:bg-[#14171d] rounded-full max-w-xs mx-auto w-full relative">
                     <button
                         type="button"
                         onClick={() => setActiveTab("accumulated")}
@@ -663,35 +669,7 @@ function ReinvestContent() {
                             />
                         )}
                         <Coin1 size={15} color="currentColor" className="relative z-10 shrink-0" />
-                        <span className="relative z-10 truncate hidden sm:inline">Total QTX Accumulated</span>
-                        <span className="relative z-10 truncate sm:hidden">Total QTX</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("automated")}
-                        className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer relative z-10 ${
-                            activeTab === "automated"
-                                ? (isDark ? "text-[#0b0e14] font-bold" : "text-white font-semibold")
-                                : "text-gray-500 dark:text-[#848e9c] hover:text-[#0f172a] dark:hover:text-white"
-                        }`}
-                    >
-                        {activeTab === "automated" && (
-                            <motion.div
-                                layoutId="activeReinvestTab"
-                                className="absolute inset-0 rounded-full"
-                                style={isDark ? {
-                                    background: "#FCD535",
-                                    boxShadow: "0 2px 10px rgba(252, 213, 53, 0.35)",
-                                } : {
-                                    background: "#0072ED",
-                                    boxShadow: "inset 4px 6px 10.8px rgba(255, 255, 255, 0.4)",
-                                }}
-                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                            />
-                        )}
-                        <Flash size={15} color="currentColor" className="relative z-10 shrink-0" />
-                        <span className="relative z-10 truncate">Automated</span>
+                        <span className="relative z-10 truncate">Total QTX</span>
                     </button>
 
                     <button
@@ -744,7 +722,27 @@ function ReinvestContent() {
                             transition={{ duration: 0.18 }}
                             className="flex flex-col gap-4"
                         >
-                            {/* Section 1: Launchpad Contract Allocated Amount Hero Card & Vesting Status */}
+                            {/* Section 1: Timelock Release Time Widget (No background, placed above Launchpad Allocation) */}
+                            <div className="w-full flex flex-col items-center gap-2 select-none pt-1 pb-1">
+                                <CompoundingTimerWidget
+                                    secondsRemaining={timelockSecondsRemaining}
+                                    hasActiveInvestments={true}
+                                    title="Timelock Release Time"
+                                    hideProjection={true}
+                                    idPrefix="qtx-timelock"
+                                    countdownText={timelockSecondsRemaining <= 0 ? "Timelock Unlocked • Ready to Claim" : undefined}
+                                />
+
+                                {/* Timelock Target & Vesting Details */}
+                                <div className="w-full flex items-center justify-center text-xs text-gray-500 dark:text-[#848e9c]">
+                                    <span className="flex items-center gap-1.5 font-medium">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span>Target Release: <strong className="font-mono text-gray-800 dark:text-gray-200">March 30, 2027</strong></span>
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Section 2: Launchpad Contract Allocated Amount Hero Card & Vesting Status */}
                             <div
                                 className="relative w-full overflow-hidden p-4 sm:p-5 flex flex-col gap-3.5 select-none rounded-2xl transition-all duration-200"
                                 style={incomeCardStyle}
@@ -839,34 +837,75 @@ function ReinvestContent() {
                                 </MetalBorder>
                             </div>
 
-                            {/* Dedicated Animated Next Compounding Timelock Timer Card */}
-                            <div
-                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col items-center gap-3 transition-all duration-200 select-none"
+                            {/* Section 3: Upgrade Yield Allocation Option (Only higher tiers visible) */}
+                            <div 
+                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3.5 select-none transition-all duration-200"
                                 style={incomeCardStyle}
                             >
-                                <CompoundingTimerWidget
-                                    secondsRemaining={timelockSecondsRemaining}
-                                    hasActiveInvestments={true}
-                                    title="Timelock Release Time"
-                                    subtitle="180-Day QTX Timelock Vault"
-                                    hideProjection={true}
-                                    idPrefix="qtx-timelock"
-                                    countdownText={timelockSecondsRemaining <= 0 ? "Timelock Unlocked • Ready to Claim" : undefined}
-                                />
-
-                                {/* Timelock Target & Vesting Details */}
-                                <div className="w-full pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c] flex-wrap gap-2">
-                                    <span className="flex items-center gap-1.5 font-medium">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span>Target Release: <strong className="font-mono text-gray-800 dark:text-gray-200">March 30, 2027</strong></span>
-                                    </span>
-                                    <span className="font-mono text-[11px] text-gray-400">
-                                        25% Tranches / 90 Days
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Setting2 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
+                                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                            Increase Launchpad Allocation
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] text-gray-400 dark:text-[#848e9c]">
+                                        Active: <strong className="text-[#0072ED] dark:text-[#FCD535] font-mono">{currentLockedPercent}%</strong>
                                     </span>
                                 </div>
+
+                                <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
+                                    Allocate a larger share of your withdrawal yield to QTX at live market rates. Preference can only be increased (lower tiers are locked).
+                                </p>
+
+                                {availableUpgradeTiers.length > 0 ? (
+                                    <>
+                                        <div className={`grid grid-cols-${Math.min(availableUpgradeTiers.length, 3)} gap-2 pt-1`}>
+                                            {availableUpgradeTiers.map((pct) => {
+                                                const isSelected = targetUpgradePercent === pct;
+                                                return (
+                                                    <button
+                                                        key={pct}
+                                                        type="button"
+                                                        onClick={() => setSelectedUpgradePercent(pct)}
+                                                        className={`py-2.5 px-2 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
+                                                            isSelected
+                                                                ? "bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border-[#0072ED] dark:border-[#FCD535] text-[#0072ED] dark:text-[#FCD535]"
+                                                                : "bg-white/80 dark:bg-white/5 border-black/5 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                                                        }`}
+                                                    >
+                                                        <span className="text-sm font-bold font-mono">{pct}%</span>
+                                                        <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
+                                                            {pct === 100 ? "Max Tier" : "Upgrade"}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        <div className="pt-2 flex items-center justify-between gap-3">
+                                            <span className="text-[11px] text-gray-400">
+                                                Upgrade allocation to <strong className="text-gray-900 dark:text-white font-mono">{targetUpgradePercent}%</strong>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleUpdatePreference(targetUpgradePercent)}
+                                                disabled={busyAction === "updatePref"}
+                                                className="px-4 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                                            >
+                                                {busyAction === "updatePref" ? "Upgrading..." : `Upgrade to ${targetUpgradePercent}%`}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                                        <TickCircle size={16} color="currentColor" variant="Bold" className="shrink-0" />
+                                        <span>Maximum Allocation Active (100%). Your withdrawals are fully routed into QTX.</span>
+                                    </div>
+                                )}
                             </div>
 
-                            {/* Additional Vault & Allocation Transparency Card */}
+                            {/* Section 4: Vault & Allocation Transparency Card */}
                             <div
                                 className="relative w-full overflow-hidden p-4 sm:p-5 flex flex-col gap-3 select-none rounded-2xl transition-all duration-200"
                                 style={incomeCardStyle}
@@ -929,143 +968,6 @@ function ReinvestContent() {
                                         <span>{QTX_TOKEN_ADDRESS.slice(0, 6)}...{QTX_TOKEN_ADDRESS.slice(-4)}</span>
                                         <ExportSquare size={12} color="currentColor" />
                                     </a>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* Tab 2: Automated */}
-                    {activeTab === "automated" && (
-                        <motion.div
-                            key="automated"
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.18 }}
-                            className="flex flex-col gap-4"
-                        >
-                            {/* Automated Routing Authorization Strip */}
-                            <div 
-                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3 select-none transition-all duration-200"
-                                style={incomeCardStyle}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <ShieldTick size={18} color="currentColor" className="text-emerald-500 shrink-0" />
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold text-gray-900 dark:text-white text-xs">
-                                                Automated Routing Status
-                                            </span>
-                                            <span className="text-[10px] text-gray-400 font-medium">
-                                                {isRelayerApproved ? "Active & Authorized" : "Setup Required"}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {isRelayerApproved ? (
-                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                            <TickCircle size={14} color="currentColor" variant="Bold" />
-                                            <span>Authorized</span>
-                                        </span>
-                                    ) : (
-                                        <button
-                                            type="button"
-                                            onClick={handleAuthorizeRelayer}
-                                            disabled={busyAction === "authorizeRelayer"}
-                                            className="px-4 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs"
-                                        >
-                                            {busyAction === "authorizeRelayer" ? "Authorizing..." : "Authorize Routing"}
-                                        </button>
-                                    )}
-                                </div>
-                                <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
-                                    One-time approval enables your selected withdrawal proportion to convert into QTX automatically.
-                                </p>
-                            </div>
-
-                            {/* Section 2: Automated Yield Route Controller (Radio Selector: 25% | 50% | 75% | 100%) */}
-                            <div 
-                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3.5 select-none transition-all duration-200"
-                                style={incomeCardStyle}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Setting2 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
-                                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                                            Automated Yield Route
-                                        </span>
-                                    </div>
-                                    <span className="text-[11px] text-gray-400 dark:text-[#848e9c]">
-                                        Active: <strong className="text-[#0072ED] dark:text-[#FCD535] font-mono">{currentLockedPercent}%</strong>
-                                    </span>
-                                </div>
-
-                                <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
-                                    Automatically converts your i6 withdrawal into QTX allocations without contract fees or manual transactions.
-                                </p>
-
-                                <div className="grid grid-cols-4 gap-2 pt-1">
-                                    {[25, 50, 75, 100].map((pct) => {
-                                        const isSelected = selectedRoutePercent === pct;
-                                        return (
-                                            <button
-                                                key={pct}
-                                                type="button"
-                                                onClick={() => setSelectedRoutePercent(pct)}
-                                                className={`py-2.5 px-2 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
-                                                    isSelected
-                                                        ? "bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border-[#0072ED] dark:border-[#FCD535] text-[#0072ED] dark:text-[#FCD535]"
-                                                        : "bg-white/80 dark:bg-white/5 border-black/5 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
-                                                }`}
-                                            >
-                                                <span className="text-sm font-bold font-mono">{pct}%</span>
-                                                <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
-                                                    {pct === 75 ? "Default" : pct === 100 ? "Max" : "Route"}
-                                                </span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {selectedRoutePercent !== currentLockedPercent && (
-                                    <div className="pt-2 flex items-center justify-between">
-                                        <span className="text-[11px] text-gray-400">
-                                            Update route from {currentLockedPercent}% → {selectedRoutePercent}%
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleUpdatePreference(selectedRoutePercent)}
-                                            disabled={busyAction === "updatePref"}
-                                            className="px-3.5 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs"
-                                        >
-                                            {busyAction === "updatePref" ? "Updating..." : "Update Allocation"}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* How Automated Routing Works Card */}
-                            <div 
-                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3 select-none transition-all duration-200"
-                                style={incomeCardStyle}
-                            >
-                                <span className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <Flash size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
-                                    <span>How Automated Routing Works</span>
-                                </span>
-                                <div className="flex flex-col gap-2.5 pt-1 text-xs">
-                                    <div className="flex items-start gap-2.5">
-                                        <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
-                                        <span className="text-gray-600 dark:text-[#848e9c]">Request withdrawal of your available earnings anytime.</span>
-                                    </div>
-                                    <div className="flex items-start gap-2.5">
-                                        <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
-                                        <span className="text-gray-600 dark:text-[#848e9c]">The automated system routes <strong className="text-gray-900 dark:text-white">{currentLockedPercent}%</strong> into QuantX Launchpad contract at live market rates.</span>
-                                    </div>
-                                    <div className="flex items-start gap-2.5">
-                                        <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
-                                        <span className="text-gray-600 dark:text-[#848e9c]">Remaining <strong className="text-gray-900 dark:text-white">{100 - currentLockedPercent}%</strong> is credited directly to your connected wallet. Zero gas fee on your end.</span>
-                                    </div>
                                 </div>
                             </div>
                         </motion.div>
@@ -1163,13 +1065,13 @@ function ReinvestContent() {
                                     <div className="flex items-center justify-between gap-3">
                                         {/* QTX Token Badge */}
                                         <div className="flex items-center gap-2.5 shrink-0">
-                                            <div className="w-11 h-11 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 flex items-center justify-center border border-[#0072ED]/20 dark:border-[#FCD535]/25 overflow-hidden">
+                                            <div className="w-11 h-11 rounded-full flex items-center justify-center overflow-hidden">
                                                 <Image
                                                     src="/3d-icons/qtx-logo.png"
                                                     alt="QTX"
-                                                    width={36}
-                                                    height={36}
-                                                    className="object-contain p-0.5"
+                                                    width={44}
+                                                    height={44}
+                                                    className="w-full h-full object-contain"
                                                 />
                                             </div>
                                             <div className="flex flex-col">
