@@ -88,7 +88,7 @@ export default function QuantXCard({
             {/* Header: Title and View Button */}
             <div className="flex items-center justify-between gap-2 relative z-10 pl-16 sm:pl-20 min-h-[40px]">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <span className="text-[14px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
+                    <span className="text-[18px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
                         QuantX AI Reinvestment
                     </span>
                 </div>
