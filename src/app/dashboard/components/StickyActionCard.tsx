@@ -49,7 +49,7 @@ export default function StickyActionCard({
 
     return (
         <div className={`fixed ${bottomOffset || "bottom-0"} left-0 right-0 z-40 flex justify-center pointer-events-none px-0`}>
-            <div className="w-full max-w-lg mx-auto bg-white/95 dark:bg-[#14171d]/95 backdrop-blur-md rounded-t-[32px] rounded-b-none border-t border-x border-gray-100/90 dark:border-[#20252d] px-5 pt-4 pb-6 flex flex-col gap-3 shadow-[0_-10px_35px_rgba(12,50,99,0.08)] dark:shadow-[0_-10px_35px_rgba(0,0,0,0.65)] pointer-events-auto transition-colors duration-200">
+            <div className="w-full max-w-lg mx-auto bg-white/95 dark:bg-[#14171d]/95 backdrop-blur-md rounded-t-[32px] rounded-b-none border-t border-x border-gray-100/90 dark:border-[#20252d] px-5 pt-4 pb-6 sm:pb-7 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col gap-3 shadow-[0_-10px_35px_rgba(12,50,99,0.08)] dark:shadow-[0_-10px_35px_rgba(0,0,0,0.65)] pointer-events-auto transition-colors duration-200">
                 {/* Top Badge (Single Line) */}
                 <div className="flex items-center gap-2 px-1">
                     <div className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shrink-0">

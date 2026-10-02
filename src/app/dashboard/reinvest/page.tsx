@@ -837,30 +837,26 @@ function ReinvestContent() {
                                 </MetalBorder>
                             </div>
 
-                            {/* Section 3: Upgrade Yield Allocation Option (Only higher tiers visible) */}
+                            {/* Section 3: Increase Allocation */}
                             <div 
-                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3.5 select-none transition-all duration-200"
+                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3 select-none transition-all duration-200"
                                 style={incomeCardStyle}
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Setting2 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
                                         <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                                            Increase Launchpad Allocation
+                                            Increase Allocation
                                         </span>
                                     </div>
-                                    <span className="text-[11px] text-gray-400 dark:text-[#848e9c]">
-                                        Active: <strong className="text-[#0072ED] dark:text-[#FCD535] font-mono">{currentLockedPercent}%</strong>
+                                    <span className="text-[11px] font-mono text-gray-400 dark:text-[#848e9c]">
+                                        Active: <strong className="text-gray-900 dark:text-white">{currentLockedPercent}%</strong>
                                     </span>
                                 </div>
 
-                                <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
-                                    Allocate a larger share of your withdrawal yield to QTX at live market rates. Preference can only be increased (lower tiers are locked).
-                                </p>
-
                                 {availableUpgradeTiers.length > 0 ? (
-                                    <>
-                                        <div className={`grid grid-cols-${Math.min(availableUpgradeTiers.length, 3)} gap-2 pt-1`}>
+                                    <div className="flex items-center gap-2 pt-0.5">
+                                        <div className="flex items-center gap-2 flex-1">
                                             {availableUpgradeTiers.map((pct) => {
                                                 const isSelected = targetUpgradePercent === pct;
                                                 return (
@@ -868,39 +864,31 @@ function ReinvestContent() {
                                                         key={pct}
                                                         type="button"
                                                         onClick={() => setSelectedUpgradePercent(pct)}
-                                                        className={`py-2.5 px-2 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
+                                                        className={`flex-1 py-2 px-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold transition-all cursor-pointer border text-center ${
                                                             isSelected
                                                                 ? "bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border-[#0072ED] dark:border-[#FCD535] text-[#0072ED] dark:text-[#FCD535]"
-                                                                : "bg-white/80 dark:bg-white/5 border-black/5 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                                                                : "bg-white/70 dark:bg-white/5 border-black/5 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
                                                         }`}
                                                     >
-                                                        <span className="text-sm font-bold font-mono">{pct}%</span>
-                                                        <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
-                                                            {pct === 100 ? "Max Tier" : "Upgrade"}
-                                                        </span>
+                                                        {pct}%
                                                     </button>
                                                 );
                                             })}
                                         </div>
 
-                                        <div className="pt-2 flex items-center justify-between gap-3">
-                                            <span className="text-[11px] text-gray-400">
-                                                Upgrade allocation to <strong className="text-gray-900 dark:text-white font-mono">{targetUpgradePercent}%</strong>
-                                            </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => handleUpdatePreference(targetUpgradePercent)}
-                                                disabled={busyAction === "updatePref"}
-                                                className="px-4 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs disabled:opacity-50"
-                                            >
-                                                {busyAction === "updatePref" ? "Upgrading..." : `Upgrade to ${targetUpgradePercent}%`}
-                                            </button>
-                                        </div>
-                                    </>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleUpdatePreference(targetUpgradePercent)}
+                                            disabled={busyAction === "updatePref"}
+                                            className="py-2 px-4 rounded-xl bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs disabled:opacity-50 shrink-0"
+                                        >
+                                            {busyAction === "updatePref" ? "Upgrading..." : `Upgrade to ${targetUpgradePercent}%`}
+                                        </button>
+                                    </div>
                                 ) : (
-                                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                                        <TickCircle size={16} color="currentColor" variant="Bold" className="shrink-0" />
-                                        <span>Maximum Allocation Active (100%). Your withdrawals are fully routed into QTX.</span>
+                                    <div className="flex items-center gap-2 pt-0.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                                        <TickCircle size={15} color="currentColor" variant="Bold" className="shrink-0" />
+                                        <span>Maximum allocation active (100%)</span>
                                     </div>
                                 )}
                             </div>
@@ -951,12 +939,7 @@ function ReinvestContent() {
                                         <ExportSquare size={12} color="currentColor" />
                                     </a>
                                 </div>
-                                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
-                                    <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">Timelock Total Allocated</span>
-                                    <span className="font-mono text-[11px] font-semibold text-gray-900 dark:text-white">
-                                        {timelockInfo?.totalAllocatedToUsers || "88.55"} QTX
-                                    </span>
-                                </div>
+                               
                                 <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
                                     <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Token Contract</span>
                                     <a
@@ -1130,10 +1113,10 @@ function ReinvestContent() {
                     <StickyActionCard
                         badge={{
                             icon: "/3d-icons/qtx-logo.png",
-                            label: "Processed through",
-                            title: "Automated Routing Engine",
+                            label: "Contract",
+                            title: "QuantX Launchpad",
                         }}
-                        bottomOffset="bottom-4 sm:bottom-6"
+                        bottomOffset="bottom-0"
                         mode={!isRelayerApproved ? "approve" : "swipe"}
                         approveLabel="Authorize Reinvestment (Unlimited)"
                         onApprove={handleAuthorizeRelayer}
