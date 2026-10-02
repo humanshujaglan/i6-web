@@ -163,11 +163,11 @@ export const I6PriceCard = memo(function I6PriceCard({
                 <div className="flex items-center gap-2.5">
                     <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full shrink-0 flex items-center justify-center overflow-hidden bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border border-[#0072ED]/20 dark:border-[#FCD535]/25">
                         <Image
-                            src="/3d-icons/swap.webp"
+                            src="/3d-icons/qtx-logo.png"
                             alt="QuantX AI (QTX)"
                             width={40}
                             height={40}
-                            className="w-full h-full object-contain p-1"
+                            className="w-full h-full object-contain p-0.5"
                         />
                     </div>
 

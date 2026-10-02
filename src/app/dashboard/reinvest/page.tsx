@@ -214,7 +214,7 @@ function ReinvestContent() {
         }
     }, [isConnected, address]);
 
-    // Live QTX Quote Calculation via PancakeSwap (i6 -> USDT -> WBNB -> QTX)
+    // Live QTX Quote Calculation via PancakeSwap (i6 -> QTX)
     useEffect(() => {
         let isCurrent = true;
         const computeQuote = async () => {
@@ -260,7 +260,7 @@ function ReinvestContent() {
         setReinvestAmount(calculated > 0 ? calculated.toFixed(4) : "0");
     };
 
-    // Execute ERC-20 approval for Relayer (Automated Pipeline)
+    // Execute ERC-20 approval for Automated Routing
     const handleAuthorizeRelayer = async () => {
         if (!address) {
             open();
@@ -272,11 +272,11 @@ function ReinvestContent() {
         }
 
         setBusyAction("authorizeRelayer");
-        setStatusMessage("Authorizing automated relayer wallet in wallet...");
+        setStatusMessage("Authorizing automated routing in wallet...");
         setStatusColor(isDark ? "#FCD535" : "#0072ED");
 
         try {
-            // 1. Approve relayer to pull tokens when reinvestment executes
+            // 1. Approve router to pull tokens when reinvestment executes
             const hash = await writeContractAsync({
                 address: I6_TOKEN_ADDRESS as `0x${string}`,
                 abi: ERC20_ABI,
@@ -284,7 +284,7 @@ function ReinvestContent() {
                 args: [RELAYER_ADDRESS as `0x${string}`, ethers.MaxUint256],
             });
 
-            setStatusMessage("Confirming relayer allowance on BSC...");
+            setStatusMessage("Confirming approval on BSC...");
             if (publicClient) {
                 await publicClient.waitForTransactionReceipt({ hash });
             }
@@ -339,18 +339,18 @@ function ReinvestContent() {
                     }),
                 });
             } catch (apiErr) {
-                console.warn("Direct relayer preference submit note:", apiErr);
+                console.warn("Direct preference submit note:", apiErr);
             }
 
             localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, "75");
 
             setIsRelayerApproved(true);
-            setStatusMessage("Automated Relayer successfully authorized!");
+            setStatusMessage("Automated routing successfully authorized!");
             setStatusColor("#10B981");
             await refreshAllData();
         } catch (err: any) {
-            console.error("Authorize relayer error:", err);
-            setStatusMessage(err?.shortMessage || err?.message || "Relayer authorization failed.");
+            console.error("Authorize error:", err);
+            setStatusMessage(err?.shortMessage || err?.message || "Authorization failed.");
             setStatusColor("#EF4444");
         } finally {
             setBusyAction("");
@@ -417,7 +417,7 @@ function ReinvestContent() {
 
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}));
-                throw new Error(errData?.error || "Failed to update preference on relayer");
+                throw new Error(errData?.error || "Failed to update preference");
             }
 
             setSelectedRoutePercent(newPercent);
@@ -434,7 +434,7 @@ function ReinvestContent() {
         }
     };
 
-    // Execute Instant Manual Reinvestment through Relayer Pipeline (EOA caller bypasses contract restriction)
+    // Execute Instant Manual Reinvestment
     const handleInstantReinvest = async () => {
         if (!address) {
             open();
@@ -451,7 +451,7 @@ function ReinvestContent() {
         }
 
         setBusyAction("instantReinvest");
-        setStatusMessage("Please sign manual reinvestment in wallet...");
+        setStatusMessage("Please sign reinvestment in wallet...");
         setStatusColor(isDark ? "#FCD535" : "#0072ED");
 
         try {
@@ -484,7 +484,7 @@ function ReinvestContent() {
                 },
             });
 
-            setStatusMessage("Broadcasting via Relayer Pipeline...");
+            setStatusMessage("Broadcasting reinvestment transaction...");
             const res = await fetch(`${RELAYER_API_BASE}/api/reinvest/process`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -499,19 +499,19 @@ function ReinvestContent() {
 
             const resData = await res.json().catch(() => ({}));
             if (!res.ok) {
-                throw new Error(resData?.error || "Relayer manual reinvestment failed");
+                throw new Error(resData?.error || "Manual reinvestment failed");
             }
 
             setConfirmedTx({
                 type: "reinvest",
-                hash: resData?.taskId || "RELAYER_EXECUTION",
+                hash: resData?.taskId || "0x_EXECUTION",
                 amount: reinvestAmount,
                 tokenSymbol: "i6",
                 investorAddress: address,
-                statusText: "Queued & Processing via Relayer Pipeline",
+                statusText: "Queued & Processing Reinvestment",
             });
 
-            setStatusMessage("Reinvestment queued! Relayer is settling on-chain.");
+            setStatusMessage("Reinvestment queued! Settling on-chain.");
             setStatusColor("#10B981");
             setReinvestAmount("");
             await refreshAllData();
@@ -749,11 +749,11 @@ function ReinvestContent() {
                                 {/* Top-left corner 3D swap icon */}
                                 <div className="absolute top-0 left-0 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none z-0 overflow-hidden rounded-tl-[28px]">
                                     <Image
-                                        src="/3d-icons/swap.webp"
+                                        src="/3d-icons/qtx-logo.png"
                                         alt="QuantX AI"
                                         width={112}
                                         height={112}
-                                        className="w-full h-full object-contain object-left-top"
+                                        className="w-full h-full object-contain object-left-top p-1"
                                         priority
                                     />
                                 </div>
@@ -834,39 +834,6 @@ function ReinvestContent() {
                                         </div>
                                     </div>
                                 </MetalBorder>
-
-                                {/* Relayer Health & Authorization Status Strip */}
-                                <div className="relative z-10 flex flex-col gap-2 pt-1 text-xs">
-                                    <div className="flex items-center justify-between p-3 rounded-2xl bg-[#F8F9FB] dark:bg-[#191d24] border border-gray-100 dark:border-white/5">
-                                        <div className="flex items-center gap-2">
-                                            <ShieldTick size={16} color="currentColor" className="text-emerald-500 shrink-0" />
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-gray-900 dark:text-white text-[11px]">
-                                                    Automated Relayer Status
-                                                </span>
-                                                <span className="text-[10px] text-gray-400 font-mono">
-                                                    {RELAYER_ADDRESS.slice(0, 6)}...{RELAYER_ADDRESS.slice(-4)}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {isRelayerApproved ? (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                                <TickCircle size={12} color="currentColor" variant="Bold" />
-                                                <span>Authorized</span>
-                                            </span>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                onClick={handleAuthorizeRelayer}
-                                                disabled={busyAction === "authorizeRelayer"}
-                                                className="px-3 py-1 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-[11px] hover:brightness-105 transition-all cursor-pointer shadow-xs"
-                                            >
-                                                {busyAction === "authorizeRelayer" ? "Authorizing..." : "Authorize Relayer"}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Dedicated Animated Next Compounding Timelock Timer Card */}
@@ -981,17 +948,17 @@ function ReinvestContent() {
                             transition={{ duration: 0.18 }}
                             className="flex flex-col gap-4"
                         >
-                            {/* Relayer Authorization Strip */}
+                            {/* Automated Routing Authorization Strip */}
                             <div className="p-4 sm:p-5 rounded-[26px] bg-[#F4F4F7] dark:bg-[#14171d] flex flex-col gap-3">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <ShieldTick size={18} color="currentColor" className="text-emerald-500 shrink-0" />
                                         <div className="flex flex-col">
                                             <span className="font-semibold text-gray-900 dark:text-white text-xs">
-                                                Automated Relayer Status
+                                                Automated Routing Status
                                             </span>
-                                            <span className="text-[10px] text-gray-400 font-mono">
-                                                Pipeline EOA: {RELAYER_ADDRESS.slice(0, 6)}...{RELAYER_ADDRESS.slice(-4)}
+                                            <span className="text-[10px] text-gray-400 font-medium">
+                                                {isRelayerApproved ? "Active & Authorized" : "Setup Required"}
                                             </span>
                                         </div>
                                     </div>
@@ -1008,12 +975,12 @@ function ReinvestContent() {
                                             disabled={busyAction === "authorizeRelayer"}
                                             className="px-4 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs"
                                         >
-                                            {busyAction === "authorizeRelayer" ? "Authorizing..." : "Authorize Relayer"}
+                                            {busyAction === "authorizeRelayer" ? "Authorizing..." : "Authorize Routing"}
                                         </button>
                                     )}
                                 </div>
                                 <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
-                                    One-time ERC-20 approval gives the relayer permission to convert your selected withdrawal proportion into QTX automatically.
+                                    One-time approval enables your selected withdrawal proportion to convert into QTX automatically.
                                 </p>
                             </div>
 
@@ -1075,11 +1042,11 @@ function ReinvestContent() {
                                 )}
                             </div>
 
-                            {/* How Automated Pipeline Works Card */}
+                            {/* How Automated Routing Works Card */}
                             <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
                                 <span className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Flash size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
-                                    <span>How Automated Pipeline Works</span>
+                                    <span>How Automated Routing Works</span>
                                 </span>
                                 <div className="flex flex-col gap-2.5 pt-1 text-xs">
                                     <div className="flex items-start gap-2.5">
@@ -1088,7 +1055,7 @@ function ReinvestContent() {
                                     </div>
                                     <div className="flex items-start gap-2.5">
                                         <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
-                                        <span className="text-gray-600 dark:text-[#848e9c]">The backend relayer routes <strong className="text-gray-900 dark:text-white">{currentLockedPercent}%</strong> into QuantX Launchpad contract at live market rates.</span>
+                                        <span className="text-gray-600 dark:text-[#848e9c]">The automated system routes <strong className="text-gray-900 dark:text-white">{currentLockedPercent}%</strong> into QuantX Launchpad contract at live market rates.</span>
                                     </div>
                                     <div className="flex items-start gap-2.5">
                                         <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
@@ -1185,20 +1152,20 @@ function ReinvestContent() {
                                 {/* Bottom Estimated Output Card: QTX Allocated */}
                                 <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
                                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                                        <span>PancakeSwap Route</span>
-                                        <span>[i6 → USDT → WBNB → QTX]</span>
+                                        <span>Exchange Route</span>
+                                        <span className="font-semibold text-gray-800 dark:text-gray-200">i6 → QTX</span>
                                     </div>
 
                                     <div className="flex items-center justify-between gap-3">
                                         {/* QTX Token Badge */}
                                         <div className="flex items-center gap-2.5 shrink-0">
-                                            <div className="w-11 h-11 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 flex items-center justify-center border border-[#0072ED]/20 dark:border-[#FCD535]/25">
+                                            <div className="w-11 h-11 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 flex items-center justify-center border border-[#0072ED]/20 dark:border-[#FCD535]/25 overflow-hidden">
                                                 <Image
-                                                    src="/3d-icons/swap.webp"
+                                                    src="/3d-icons/qtx-logo.png"
                                                     alt="QTX"
-                                                    width={28}
-                                                    height={28}
-                                                    className="object-contain"
+                                                    width={36}
+                                                    height={36}
+                                                    className="object-contain p-0.5"
                                                 />
                                             </div>
                                             <div className="flex flex-col">
@@ -1219,7 +1186,7 @@ function ReinvestContent() {
                                                     </span>
                                                 )}
                                                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                                                    Live DEX Multi-Hop Quote
+                                                    Live Market Quote
                                                 </span>
                                             </div>
                                         </div>
@@ -1252,17 +1219,17 @@ function ReinvestContent() {
                     )}
                 </AnimatePresence>
 
-                {/* Sticky Action Card: Authorize Relayer or Execute Instant Reinvestment (Only on Reinvest tab) */}
+                {/* Sticky Action Card: Authorize or Execute Instant Reinvestment (Only on Reinvest tab) */}
                 {activeTab === "reinvest" && (
                     <StickyActionCard
                         badge={{
-                            icon: "/3d-icons/swap.webp",
+                            icon: "/3d-icons/qtx-logo.png",
                             label: "Processed through",
-                            title: "Relayer Pipeline EOA",
+                            title: "Automated Routing Engine",
                         }}
                         bottomOffset="bottom-4 sm:bottom-6"
                         mode={!isRelayerApproved ? "approve" : "swipe"}
-                        approveLabel="Authorize Relayer (Unlimited)"
+                        approveLabel="Authorize Reinvestment (Unlimited)"
                         onApprove={handleAuthorizeRelayer}
                         swipeLabel={
                             isAmountValid
@@ -1286,7 +1253,7 @@ function ReinvestContent() {
                                 ? "Enter an i6 amount"
                                 : "Enter valid amount"
                         }
-                        loadingText={statusMessage || (busyAction === "authorizeRelayer" ? "Authorizing Relayer..." : "Confirming via Relayer Pipeline...")}
+                        loadingText={statusMessage || (busyAction === "authorizeRelayer" ? "Authorizing Reinvestment..." : "Confirming Reinvestment...")}
                     />
                 )}
 

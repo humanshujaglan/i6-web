@@ -92,14 +92,14 @@ export default function QuantXCard({
                     : "0 3px 12px rgba(12, 50, 99, 0.06)",
             }}
         >
-            {/* Top-left stuck corner 3D swap icon */}
+            {/* Top-left stuck corner 3D QTX emblem */}
             <div className="absolute top-0 left-0 w-20 h-20 sm:w-24 sm:h-24 pointer-events-none z-0 overflow-hidden rounded-tl-2xl">
                 <Image
-                    src="/3d-icons/swap.webp"
+                    src="/3d-icons/qtx-logo.png"
                     alt="QuantX AI Reinvest"
                     width={96}
                     height={96}
-                    className="w-full h-full object-contain object-left-top"
+                    className="w-full h-full object-contain object-left-top p-1"
                     priority
                 />
             </div>
@@ -114,7 +114,7 @@ export default function QuantXCard({
             </div>
 
             {/* Connected 2-Pill Exchange Layout */}
-            <div className="relative z-10 w-full grid grid-cols-2 gap-2 sm:gap-3 items-center">
+            <div className="relative z-10 w-full grid grid-cols-2 gap-2 sm:gap-3 items-center mt-3 sm:mt-4">
                 {/* Left Pill: Reinvestment Engine Status */}
                 <div
                     className="w-full min-w-0 flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-[37px] border transition-all h-[56px]"
@@ -179,11 +179,11 @@ export default function QuantXCard({
                 </div>
             </div>
 
-            {/* Bottom Action Row: View Button at the right */}
-            <div className="relative z-10 flex items-center justify-end w-full pt-0.5">
+            {/* Bottom Action Row: Full-width View Button */}
+            <div className="relative z-10 w-full pt-1">
                 <Link
                     href="/dashboard/reinvest"
-                    className="px-4 py-1.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                    className="w-full py-2.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                 >
                     View
                 </Link>
