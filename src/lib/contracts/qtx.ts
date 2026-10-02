@@ -155,31 +155,56 @@ export async function fetchUserAllocation(
  * Retrieves relayer status from relayer backend API or internal proxy
  */
 export async function getRelayerStatus(userAddress: string): Promise<RelayerStatusResponse> {
+    const cleanAddr = userAddress.toLowerCase();
     try {
+        let proxyData: RelayerStatusResponse | null = null;
         // Try internal proxy route first (for CORS protection & local caching)
-        const res = await fetch(`/api/reinvest/status/${userAddress}`, {
-            headers: { "Content-Type": "application/json" },
-            cache: "no-store",
-        });
-
-        if (res.ok) {
-            return await res.json();
+        try {
+            const res = await fetch(`/api/reinvest/status/${cleanAddr}`, {
+                headers: { "Content-Type": "application/json" },
+                cache: "no-store",
+            });
+            if (res.ok) {
+                proxyData = await res.json();
+                if (proxyData?.preference?.percent) {
+                    return proxyData;
+                }
+            }
+        } catch (e) {
+            console.warn("Proxy relayer status fetch error:", e);
         }
 
-        // Direct fallback
-        const directRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/status/${userAddress}`, {
-            headers: { "Content-Type": "application/json" },
-        });
+        // Direct fallback to external relayer
+        try {
+            const directRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/status/${cleanAddr}`, {
+                headers: { "Content-Type": "application/json" },
+                cache: "no-store",
+            });
 
-        if (directRes.ok) {
-            return await directRes.json();
+            if (directRes.ok) {
+                const directData: RelayerStatusResponse = await directRes.json();
+                if (proxyData) {
+                    return {
+                        ...proxyData,
+                        ...directData,
+                        preference: directData?.preference?.percent ? directData.preference : (proxyData.preference ?? null),
+                    };
+                }
+                return directData;
+            }
+        } catch (e) {
+            console.warn("Direct relayer status fetch error:", e);
+        }
+
+        if (proxyData) {
+            return proxyData;
         }
 
         throw new Error("Unable to fetch status from relayer");
     } catch (error) {
         console.warn("Relayer status fetch fallback:", error);
         return {
-            userAddress,
+            userAddress: cleanAddr,
             relayerAddress: RELAYER_ADDRESS,
             nonce: 0,
             allowance: "0",

@@ -42,6 +42,19 @@ export async function GET(
 
         if (res.ok) {
             const data = await res.json();
+            const store = getStoredPreferences();
+            const localPref = store[cleanAddress];
+            if ((!data.preference || !data.preference.percent) && localPref) {
+                data.preference = {
+                    userAddress: cleanAddress,
+                    percent: localPref.percent ?? 75,
+                    signature: localPref.signature ?? "",
+                    deadline: localPref.deadline ?? 0,
+                };
+                if (!data.nonce && localPref.nonce !== undefined) {
+                    data.nonce = localPref.nonce;
+                }
+            }
             return NextResponse.json(data);
         }
     } catch (e) {

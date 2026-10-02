@@ -9,7 +9,7 @@ import { useAppKit } from "@reown/appkit/react";
 import { bsc } from "@reown/appkit/networks";
 import { useTheme } from "@/app/context/ThemeContext";
 import { I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI, QUANTX_REINVEST_ADDRESS, RELAYER_API_BASE } from "@/lib/contracts/abis";
-import { UNLIMITED_ALLOWANCE_THRESHOLD } from "@/lib/contracts/qtx";
+import { UNLIMITED_ALLOWANCE_THRESHOLD, getRelayerStatus } from "@/lib/contracts/qtx";
 import {
     Sun1,
     Moon,
