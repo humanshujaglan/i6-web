@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowSwapHorizontal, Flash, ArrowRight2, ShieldTick, Coin1, Refresh2 } from "iconsax-react";
+import { ArrowSwapHorizontal, ShieldTick, Coin1 } from "iconsax-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import MetalBorder from "../MetalBorder";
 import { fetchUserAllocation, UserAllocationResult } from "@/lib/contracts/qtx";
@@ -85,13 +85,20 @@ export default function QuantXCard({
                 />
             </div>
 
-            {/* Header: Title, Badge, and Action Link */}
+            {/* Header: Title and View Button */}
             <div className="flex items-center justify-between gap-2 relative z-10 pl-16 sm:pl-20 min-h-[40px]">
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                     <span className="text-[14px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
                         QuantX AI Reinvestment
                     </span>
                 </div>
+
+                <Link
+                    href="/dashboard/reinvest"
+                    className="px-4 py-1.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                >
+                    View
+                </Link>
             </div>
 
             {/* Connected 2-Pill Exchange Layout */}
@@ -158,17 +165,6 @@ export default function QuantXCard({
                 >
                     <ArrowSwapHorizontal size={14} color="currentColor" />
                 </div>
-            </div>
-
-            {/* Bottom Footer Info Strip */}
-            <div className="relative z-10 flex items-center justify-between flex-wrap gap-1.5 pt-0.5 text-xs">
-                <Link
-                    href="/dashboard/reinvest"
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#0072ED] dark:text-[#FCD535] hover:underline"
-                >
-                    <span>View Reinvest Portal</span>
-                    <ArrowRight2 size={11} color="currentColor" />
-                </Link>
             </div>
         </div>
     );
