@@ -86,7 +86,7 @@ export const I6PriceCard = memo(function I6PriceCard({
 
     const effectiveChange = customChange !== undefined ? customChange : priceData.change24h;
     const isNegative = effectiveChange < 0;
-    const chartColor = isNegative ? "#F43F5E" : (isDark ? "#FCD535" : "#0072ED");
+    const chartColor = isNegative ? "#EF4444" : "#10B981";
     const effectivePrice = customPrice || priceData.priceFormatted || (priceData.price >= 1 ? `$${priceData.price.toFixed(2)}` : `$${priceData.price.toFixed(4)}`);
     const effectiveMarketCap = customMarketCap || priceData.marketCap || "$2.58M";
     const effectiveLiquidity = priceData.liquidity || "$39.60K";
@@ -204,15 +204,13 @@ export const I6PriceCard = memo(function I6PriceCard({
 
                 <div className="flex items-center gap-2">
                     <div 
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm transition-transform duration-200 ${
-                            isNegative 
-                                ? "text-white bg-[#F43F5E]" 
-                                : (isDark ? "text-[#0b0e14] bg-[#FCD535]" : "text-white bg-[#10B981]")
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold text-white shadow-sm transition-transform duration-200 ${
+                            isNegative ? "bg-[#EF4444]" : "bg-[#10B981]"
                         }`}
                         style={{
                             boxShadow: isNegative 
-                                ? "0 2px 8px rgba(244, 63, 94, 0.45)" 
-                                : (isDark ? "0 2px 8px rgba(252, 213, 53, 0.45)" : "0 2px 8px rgba(16, 185, 129, 0.45)"),
+                                ? "0 2px 8px rgba(239, 68, 68, 0.45)" 
+                                : "0 2px 8px rgba(16, 185, 129, 0.45)",
                         }}
                     >
                         <span className="text-[10px] font-black">
@@ -223,7 +221,7 @@ export const I6PriceCard = memo(function I6PriceCard({
                         </span>
                     </div>
                     {activePoint && (
-                        <span className={`text-[10px] font-semibold tracking-wider uppercase ${isNegative ? "text-rose-400" : (isDark ? "text-[#FCD535]" : "text-emerald-400")}`}>
+                        <span className={`text-[10px] font-semibold tracking-wider uppercase ${isNegative ? "text-rose-400" : "text-emerald-400"}`}>
                             Point Value
                         </span>
                     )}
