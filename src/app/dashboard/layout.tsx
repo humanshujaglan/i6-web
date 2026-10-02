@@ -438,7 +438,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                                 className={`object-contain transition-transform duration-200 ${isActive ? "scale-105 drop-shadow-sm" : "opacity-95 hover:opacity-100"}`}
                                             />
                                             {tab.hasRedDot && (
-                                                <span className="absolute top-2 -right-0.5 flex h-2.5 w-2.5 z-20 pointer-events-none">
+                                                <span className="absolute top-2 -right-1.5 flex h-2.5 w-2.5 z-20 pointer-events-none">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-[1.5px] border-white dark:border-[#14171d]" />
                                                 </span>
