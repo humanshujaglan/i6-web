@@ -179,19 +179,11 @@ export default function QuantXCard({
                 </div>
             </div>
 
-            {/* Bottom Footer Info Strip: Relayer status & View Button on Bottom Right */}
-            <div className="relative z-10 flex items-center justify-between flex-wrap gap-2 pt-0.5 text-xs">
-                <div className="flex items-center gap-1.5 text-gray-500 dark:text-[#848e9c]">
-                    <span className="hidden sm:inline">Automated BSC Launchpad Relayer</span>
-                    <span className="sm:hidden">Launchpad Relayer</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 font-mono">
-                        Chain 56
-                    </span>
-                </div>
-
+            {/* Bottom Action Row: View Button at the right */}
+            <div className="relative z-10 flex items-center justify-end w-full pt-0.5">
                 <Link
                     href="/dashboard/reinvest"
-                    className="px-4 py-1.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0 ml-auto"
+                    className="px-4 py-1.5 rounded-xl bg-[#0072ED] hover:bg-[#0062cc] text-white dark:bg-[#FCD535] dark:hover:bg-[#f0b90b] dark:text-[#0b0e14] text-xs sm:text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
                 >
                     View
                 </Link>
