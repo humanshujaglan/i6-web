@@ -6,24 +6,33 @@ import Link from "next/link";
 import { ArrowSwapHorizontal, ShieldTick, Coin1 } from "iconsax-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import MetalBorder from "../MetalBorder";
-import { fetchUserAllocation, UserAllocationResult } from "@/lib/contracts/qtx";
+import { fetchUserAllocation, UserAllocationResult, getRelayerStatus } from "@/lib/contracts/qtx";
 
 interface QuantXCardProps {
     userAddress?: string;
     allocatedAmount?: number | string;
+    routePercent?: number;
     onRefresh?: () => void;
 }
 
 export default function QuantXCard({
     userAddress,
     allocatedAmount,
+    routePercent,
     onRefresh,
 }: QuantXCardProps) {
     const { theme } = useTheme();
     const isDark = theme === "dark";
 
     const [allocation, setAllocation] = useState<UserAllocationResult | null>(null);
+    const [yieldPercent, setYieldPercent] = useState<number>(routePercent ?? 75);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (routePercent !== undefined) {
+            setYieldPercent(routePercent);
+        }
+    }, [routePercent]);
 
     useEffect(() => {
         let isMounted = true;
@@ -32,9 +41,18 @@ export default function QuantXCard({
         const loadAllocation = async () => {
             setLoading(true);
             try {
-                const res = await fetchUserAllocation(userAddress);
+                const [allocRes, relayerRes] = await Promise.allSettled([
+                    fetchUserAllocation(userAddress),
+                    getRelayerStatus(userAddress),
+                ]);
+
                 if (isMounted) {
-                    setAllocation(res);
+                    if (allocRes.status === "fulfilled") {
+                        setAllocation(allocRes.value);
+                    }
+                    if (relayerRes.status === "fulfilled" && relayerRes.value?.preference?.percent) {
+                        setYieldPercent(relayerRes.value.preference.percent);
+                    }
                 }
             } catch (e) {
                 console.error("QuantXCard fetch error:", e);
@@ -57,6 +75,7 @@ export default function QuantXCard({
         : (allocation ? allocation.formattedAllocated : "0.00");
 
     const displayClaimed = allocation ? allocation.formattedClaimed : "0.00";
+    const displayPercent = routePercent !== undefined ? routePercent : yieldPercent;
 
     return (
         <div
@@ -120,11 +139,11 @@ export default function QuantXCard({
 
                     <div className="flex flex-col min-w-0 truncate">
                         <span className="text-[10px] sm:text-[11px] font-medium text-[#2B2B2B] dark:text-[#ffffff] truncate tracking-tight">
-                            Allocation Pipeline
+                            QTX Allocation
                         </span>
                         <span className="text-xs sm:text-sm font-semibold font-mono text-emerald-600 dark:text-emerald-400 truncate flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>75% Yield Reinvest</span>
+                            <span>{displayPercent}% Yield</span>
                         </span>
                     </div>
                 </div>

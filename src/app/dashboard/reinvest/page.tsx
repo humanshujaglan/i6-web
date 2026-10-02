@@ -92,6 +92,7 @@ function ReinvestContent() {
     const [selectedRoutePercent, setSelectedRoutePercent] = useState<number>(75);
 
     // Transaction & UI State
+    const [activeTab, setActiveTab] = useState<"accumulated" | "automated" | "reinvest">("accumulated");
     const [loadingData, setLoadingData] = useState<boolean>(true);
     const [busyAction, setBusyAction] = useState<string>("");
     const [statusMessage, setStatusMessage] = useState<string>("");
@@ -510,7 +511,7 @@ function ReinvestContent() {
 
     return (
         <div className="dashboard-container relative">
-            <div className="dashboard-content-wrapper max-w-lg mx-auto flex flex-col gap-5 py-4 pb-48">
+            <div className={`dashboard-content-wrapper max-w-lg mx-auto flex flex-col gap-5 py-4 ${activeTab === "reinvest" ? "pb-36" : "pb-12"}`}>
                 {/* Top Navigation Bar with Back Button */}
                 <div className="flex items-center justify-between py-1">
                     <BackButton href="/dashboard" />
@@ -554,320 +555,92 @@ function ReinvestContent() {
                     </button>
                 </div>
 
-                {/* Section 1: Launchpad Contract Allocated Amount Hero Card & Vesting Status */}
-                <div
-                    className="relative w-full overflow-hidden p-5 sm:p-6 flex flex-col gap-4 select-none rounded-[28px] transition-all duration-200"
-                    style={{
-                        background: isDark
-                            ? "linear-gradient(135deg, #14171d 0%, #0a0c0f 100%)"
-                            : "linear-gradient(135deg, rgba(201, 224, 255, 0.65) 0%, #FFFFFF 85%)",
-                        border: isDark
-                            ? "1px solid rgba(255, 255, 255, 0.12)"
-                            : "1.5px solid #FFFFFF",
-                        boxShadow: isDark
-                            ? "inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 8px 30px rgba(0, 0, 0, 0.55)"
-                            : "0 6px 24px rgba(12, 50, 99, 0.08)",
-                    }}
-                >
-                    {/* Top-left corner 3D swap icon */}
-                    <div className="absolute top-0 left-0 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none z-0 overflow-hidden rounded-tl-[28px]">
-                        <Image
-                            src="/3d-icons/swap.webp"
-                            alt="QuantX AI"
-                            width={112}
-                            height={112}
-                            className="w-full h-full object-contain object-left-top"
-                            priority
-                        />
-                    </div>
-
-                    {/* Header info */}
-                    <div className="flex items-center justify-between gap-2 relative z-10 pl-20 sm:pl-24 min-h-[44px]">
-                        <div className="flex flex-col">
-                            <span className="text-[11px] font-semibold text-gray-500 dark:text-[#848e9c] uppercase tracking-wider">
-                                Launchpad Allocation
-                            </span>
-                            <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                                QuantX AI (QTX)
-                            </span>
-                        </div>
-
-                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] border border-[#0072ED]/20 dark:border-[#FCD535]/25">
-                            <Flash size={12} color="currentColor" variant="Bold" />
-                            <span>{currentLockedPercent}% Auto Route</span>
-                        </div>
-                    </div>
-
-                    {/* Main Allocated Metric with Metallic Border */}
-                    <MetalBorder
-                        preset="chromatic"
-                        borderRadius={24}
-                        className="w-full relative z-10"
+                {/* Capsule Segmented Tab Switcher */}
+                <div className="flex items-center p-1 bg-[#F4F4F7] dark:bg-[#14171d] rounded-full max-w-md mx-auto w-full relative">
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("accumulated")}
+                        className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer relative z-10 ${
+                            activeTab === "accumulated"
+                                ? (isDark ? "text-[#0b0e14] font-bold" : "text-white font-semibold")
+                                : "text-gray-500 dark:text-[#848e9c] hover:text-[#0f172a] dark:hover:text-white"
+                        }`}
                     >
-                        <div className="p-4 sm:p-5 flex flex-col gap-2 rounded-[24px]">
-                            <div className="flex items-center justify-between text-xs">
-                                <span className="text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1.5">
-                                    <Coin1 size={15} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
-                                    <span>Total QTX Accumulated</span>
-                                </span>
-                                <span className="font-mono text-[11px] text-gray-400">
-                                    180-Day Vault
-                                </span>
-                            </div>
-
-                            <div className="flex items-baseline justify-between gap-2">
-                                <span className="text-2xl sm:text-3xl font-extrabold font-mono text-gray-900 dark:text-white tracking-tight">
-                                    {loadingData && !allocation ? "..." : (allocation?.formattedAllocated || "0.00")}
-                                </span>
-                                <span className="text-sm sm:text-base font-bold text-[#0072ED] dark:text-[#FCD535]">
-                                    QTX
-                                </span>
-                            </div>
-
-                            {/* Secondary Metrics & Vault Lock Status */}
-                            <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                                <span>Claimed: <strong className="font-mono text-gray-800 dark:text-gray-200">{allocation?.formattedClaimed || "0.00"} QTX</strong></span>
-
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center gap-1 text-[11px] text-gray-400 font-mono">
-                                        <Clock size={12} color="currentColor" />
-                                        <span>{lockStatus.text}</span>
-                                    </span>
-
-                                    {allocation?.isClaimable && allocation.finalQtxAmount > allocation.claimedQtxAmount && (
-                                        <button
-                                            type="button"
-                                            onClick={handleClaimTokens}
-                                            disabled={busyAction === "claim"}
-                                            className="px-2.5 py-1 rounded-full bg-emerald-500 text-white font-semibold text-[11px] hover:bg-emerald-600 transition-all cursor-pointer shadow-xs"
-                                        >
-                                            {busyAction === "claim" ? "Claiming..." : "Claim QTX"}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </MetalBorder>
-
-                    {/* Relayer Health & Authorization Status Strip */}
-                    <div className="relative z-10 flex flex-col gap-2 pt-1 text-xs">
-                        <div className="flex items-center justify-between p-3 rounded-2xl bg-[#F8F9FB] dark:bg-[#191d24] border border-gray-100 dark:border-white/5">
-                            <div className="flex items-center gap-2">
-                                <ShieldTick size={16} color="currentColor" className="text-emerald-500 shrink-0" />
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-gray-900 dark:text-white text-[11px]">
-                                        Automated Relayer Status
-                                    </span>
-                                    <span className="text-[10px] text-gray-400 font-mono">
-                                        {RELAYER_ADDRESS.slice(0, 6)}...{RELAYER_ADDRESS.slice(-4)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {isRelayerApproved ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                                    <TickCircle size={12} color="currentColor" variant="Bold" />
-                                    <span>Authorized</span>
-                                </span>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={handleAuthorizeRelayer}
-                                    disabled={busyAction === "authorizeRelayer"}
-                                    className="px-3 py-1 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-[11px] hover:brightness-105 transition-all cursor-pointer shadow-xs"
-                                >
-                                    {busyAction === "authorizeRelayer" ? "Authorizing..." : "Authorize Relayer"}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Section 2: Automated Yield Route Controller (Radio Selector: 25% | 50% | 75% | 100%) */}
-                <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Setting2 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
-                            <span className="text-xs font-semibold text-gray-900 dark:text-white">
-                                Automated Yield Route
-                            </span>
-                        </div>
-                        <span className="text-[11px] text-gray-400 dark:text-[#848e9c]">
-                            Active: <strong className="text-[#0072ED] dark:text-[#FCD535] font-mono">{currentLockedPercent}%</strong>
-                        </span>
-                    </div>
-
-                    <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
-                        Automatically converts your i6 withdrawal into QTX allocations without contract fees or manual transactions.
-                    </p>
-
-                    <div className="grid grid-cols-4 gap-2 pt-1">
-                        {[25, 50, 75, 100].map((pct) => {
-                            const isSelected = selectedRoutePercent === pct;
-                            const isCurrent = currentLockedPercent === pct;
-                            return (
-                                <button
-                                    key={pct}
-                                    type="button"
-                                    onClick={() => setSelectedRoutePercent(pct)}
-                                    className={`py-2.5 px-2 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
-                                        isSelected
-                                            ? "bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border-[#0072ED] dark:border-[#FCD535] text-[#0072ED] dark:text-[#FCD535]"
-                                            : "bg-white dark:bg-[#191d24] border-gray-200/60 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
-                                    }`}
-                                >
-                                    <span className="text-sm font-bold font-mono">{pct}%</span>
-                                    <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
-                                        {pct === 75 ? "Default" : pct === 100 ? "Max" : "Route"}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {selectedRoutePercent !== currentLockedPercent && (
-                        <div className="pt-2 flex items-center justify-between">
-                            <span className="text-[11px] text-gray-400">
-                                Update route from {currentLockedPercent}% → {selectedRoutePercent}%
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => handleUpdatePreference(selectedRoutePercent)}
-                                disabled={busyAction === "updatePref"}
-                                className="px-3.5 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs"
-                            >
-                                {busyAction === "updatePref" ? "Updating..." : "Update Allocation"}
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                {/* Section 3: Live QTX Quote Calculator via PancakeSwap Multi-Hop */}
-                <div className="relative flex flex-col">
-                    {/* Top Input Card: You Reinvest (i6) */}
-                    <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
-                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                            <span className="font-medium">Live QTX Quote Calculator</span>
-                            <span>
-                                Wallet Bal: <strong className="text-gray-900 dark:text-white font-medium">{i6Balance} i6</strong>
-                            </span>
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3">
-                            {/* Token Icon & Symbol */}
-                            <div className="flex items-center gap-2.5 shrink-0">
-                                <Image
-                                    src="/3d-icons/i6-coin-icon.webp"
-                                    alt="i6 Coin"
-                                    width={44}
-                                    height={44}
-                                    className="w-11 h-11 rounded-full object-contain"
-                                />
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-base text-gray-900 dark:text-white">Infinity Six</span>
-                                    <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">i6 Token</span>
-                                </div>
-                            </div>
-
-                            {/* Large Input Field */}
-                            <div className="flex flex-col items-end flex-1">
-                                <input
-                                    type="number"
-                                    placeholder="0.00"
-                                    min="0"
-                                    step="any"
-                                    value={reinvestAmount}
-                                    onChange={(e) => setReinvestAmount(e.target.value)}
-                                    className="w-full text-right bg-transparent text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white outline-none placeholder:text-gray-400 border-none font-mono"
-                                />
-                                <span className="text-xs text-gray-400 dark:text-[#848e9c] font-normal font-mono">
-                                    ≈${(amountVal * numericI6Price).toFixed(2)} USD
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Center Floating Exchange Icon Button */}
-                    <div className="flex justify-center -my-3.5 z-20 relative">
-                        <div className="relative inline-flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 hover:scale-105">
-                            <div
-                                className="absolute inset-0 rounded-full pointer-events-none"
-                                style={{
-                                    transform: "translateY(3.5px)",
-                                    background: isDark
-                                        ? "linear-gradient(90deg, #ffe87a 0%, #FCD535 50%, #ffe87a 100%)"
-                                        : "linear-gradient(90deg, #7CD4FD 0%, #0072ED 50%, #7CD4FD 100%)",
-                                    boxShadow: isDark
-                                        ? "0px 6px 18px rgba(252, 213, 53, 0.3)"
-                                        : "0px 6px 18px rgba(0, 114, 237, 0.32)",
+                        {activeTab === "accumulated" && (
+                            <motion.div
+                                layoutId="activeReinvestTab"
+                                className="absolute inset-0 rounded-full"
+                                style={isDark ? {
+                                    background: "#FCD535",
+                                    boxShadow: "0 2px 10px rgba(252, 213, 53, 0.35)",
+                                } : {
+                                    background: "#0072ED",
+                                    boxShadow: "inset 4px 6px 10.8px rgba(255, 255, 255, 0.4)",
                                 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
                             />
-                            <div className="relative z-10 w-full h-full rounded-full bg-white dark:bg-[#14171d] text-[#0f172a] dark:text-white flex items-center justify-center shadow-xs border border-transparent dark:border-white/5">
-                                <ArrowSwapHorizontal size={20} color="currentColor" />
-                            </div>
-                        </div>
-                    </div>
+                        )}
+                        <Coin1 size={15} color="currentColor" className="relative z-10 shrink-0" />
+                        <span className="relative z-10 truncate hidden sm:inline">Total QTX Accumulated</span>
+                        <span className="relative z-10 truncate sm:hidden">Total QTX</span>
+                    </button>
 
-                    {/* Bottom Estimated Output Card: QTX Allocated */}
-                    <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
-                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                            <span>PancakeSwap Route</span>
-                            <span>[i6 → USDT → WBNB → QTX]</span>
-                        </div>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("automated")}
+                        className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer relative z-10 ${
+                            activeTab === "automated"
+                                ? (isDark ? "text-[#0b0e14] font-bold" : "text-white font-semibold")
+                                : "text-gray-500 dark:text-[#848e9c] hover:text-[#0f172a] dark:hover:text-white"
+                        }`}
+                    >
+                        {activeTab === "automated" && (
+                            <motion.div
+                                layoutId="activeReinvestTab"
+                                className="absolute inset-0 rounded-full"
+                                style={isDark ? {
+                                    background: "#FCD535",
+                                    boxShadow: "0 2px 10px rgba(252, 213, 53, 0.35)",
+                                } : {
+                                    background: "#0072ED",
+                                    boxShadow: "inset 4px 6px 10.8px rgba(255, 255, 255, 0.4)",
+                                }}
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            />
+                        )}
+                        <Flash size={15} color="currentColor" className="relative z-10 shrink-0" />
+                        <span className="relative z-10 truncate">Automated</span>
+                    </button>
 
-                        <div className="flex items-center justify-between gap-3">
-                            {/* QTX Token Badge */}
-                            <div className="flex items-center gap-2.5 shrink-0">
-                                <div className="w-11 h-11 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 flex items-center justify-center border border-[#0072ED]/20 dark:border-[#FCD535]/25">
-                                    <Image
-                                        src="/3d-icons/swap.webp"
-                                        alt="QTX"
-                                        width={28}
-                                        height={28}
-                                        className="object-contain"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="font-semibold text-base text-gray-900 dark:text-white">QuantX AI</span>
-                                    <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">Estimated QTX</span>
-                                </div>
-                            </div>
-
-                            {/* Estimated Allocation Details */}
-                            <div className="flex flex-col items-end flex-1 truncate">
-                                <div className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white truncate font-mono">
-                                    {amountVal > 0 ? `${estimatedQtx} QTX` : "0.0000 QTX"}
-                                </div>
-                                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                                    Live DEX Multi-Hop Quote
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("reinvest")}
+                        className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer relative z-10 ${
+                            activeTab === "reinvest"
+                                ? (isDark ? "text-[#0b0e14] font-bold" : "text-white font-semibold")
+                                : "text-gray-500 dark:text-[#848e9c] hover:text-[#0f172a] dark:hover:text-white"
+                        }`}
+                    >
+                        {activeTab === "reinvest" && (
+                            <motion.div
+                                layoutId="activeReinvestTab"
+                                className="absolute inset-0 rounded-full"
+                                style={isDark ? {
+                                    background: "#FCD535",
+                                    boxShadow: "0 2px 10px rgba(252, 213, 53, 0.35)",
+                                } : {
+                                    background: "#0072ED",
+                                    boxShadow: "inset 4px 6px 10.8px rgba(255, 255, 255, 0.4)",
+                                }}
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            />
+                        )}
+                        <ArrowSwapHorizontal size={15} color="currentColor" className="relative z-10 shrink-0" />
+                        <span className="relative z-10 truncate">Reinvest</span>
+                    </button>
                 </div>
 
-                {/* Quick Presets */}
-                <div className="flex items-center justify-between gap-2 px-1">
-                    {[25, 50, 75, 100].map((preset) => (
-                        <button
-                            key={preset}
-                            type="button"
-                            onClick={() => handlePreset(preset)}
-                            className="flex-1 py-2 text-xs font-semibold rounded-xl bg-[#F4F4F7] dark:bg-[#191d24] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#20252d] active:scale-95 transition-all cursor-pointer"
-                        >
-                            {preset === 100 ? "MAX" : `${preset}%`}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Error / Status Messages */}
-                {hasInsufficientBalance && (
-                    <div className="rounded-2xl p-3.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 border border-red-200 dark:border-red-900/30">
-                        <CloseCircle size={18} color="currentColor" className="shrink-0" />
-                        <span>Insufficient i6 token balance in your wallet.</span>
-                    </div>
-                )}
-
+                {/* Status / Alert Message */}
                 {statusMessage && (
                     <div
                         className="rounded-2xl p-3.5 bg-blue-50 dark:bg-[#191d24] text-xs flex items-center gap-2 border border-blue-100 dark:border-white/5"
@@ -878,41 +651,486 @@ function ReinvestContent() {
                     </div>
                 )}
 
-                {/* Sticky Action Card: Authorize Relayer or Execute Instant Reinvestment */}
-                <StickyActionCard
-                    badge={{
-                        icon: "/3d-icons/swap.webp",
-                        label: "Processed through",
-                        title: "Relayer Pipeline EOA",
-                    }}
-                    bottomOffset="bottom-[76px] sm:bottom-[80px]"
-                    mode={!isRelayerApproved ? "approve" : "swipe"}
-                    approveLabel="Authorize Relayer (Unlimited)"
-                    onApprove={handleAuthorizeRelayer}
-                    swipeLabel={
-                        isAmountValid
-                            ? `Swipe to Reinvest ${amountVal.toFixed(2)} i6`
-                            : "Enter an amount above"
-                    }
-                    onSwipe={handleInstantReinvest}
-                    disabled={
-                        !isConnected ||
-                        !isAmountValid ||
-                        busyAction !== "" ||
-                        hasInsufficientBalance
-                    }
-                    loading={busyAction === "authorizeRelayer" || busyAction === "instantReinvest"}
-                    disabledText={
-                        !isConnected
-                            ? "Connect Wallet"
-                            : hasInsufficientBalance
-                            ? "Insufficient i6 Balance"
-                            : !reinvestAmount || amountVal <= 0
-                            ? "Enter an i6 amount"
-                            : "Enter valid amount"
-                    }
-                    loadingText={statusMessage || (busyAction === "authorizeRelayer" ? "Authorizing Relayer..." : "Confirming via Relayer Pipeline...")}
-                />
+                <AnimatePresence mode="wait">
+                    {/* Tab 1: Total QTX Accumulated */}
+                    {activeTab === "accumulated" && (
+                        <motion.div
+                            key="accumulated"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.18 }}
+                            className="flex flex-col gap-4"
+                        >
+                            {/* Section 1: Launchpad Contract Allocated Amount Hero Card & Vesting Status */}
+                            <div
+                                className="relative w-full overflow-hidden p-5 sm:p-6 flex flex-col gap-4 select-none rounded-[28px] transition-all duration-200"
+                                style={{
+                                    background: isDark
+                                        ? "linear-gradient(135deg, #14171d 0%, #0a0c0f 100%)"
+                                        : "linear-gradient(135deg, rgba(201, 224, 255, 0.65) 0%, #FFFFFF 85%)",
+                                    border: isDark
+                                        ? "1px solid rgba(255, 255, 255, 0.12)"
+                                        : "1.5px solid #FFFFFF",
+                                    boxShadow: isDark
+                                        ? "inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 8px 30px rgba(0, 0, 0, 0.55)"
+                                        : "0 6px 24px rgba(12, 50, 99, 0.08)",
+                                }}
+                            >
+                                {/* Top-left corner 3D swap icon */}
+                                <div className="absolute top-0 left-0 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none z-0 overflow-hidden rounded-tl-[28px]">
+                                    <Image
+                                        src="/3d-icons/swap.webp"
+                                        alt="QuantX AI"
+                                        width={112}
+                                        height={112}
+                                        className="w-full h-full object-contain object-left-top"
+                                        priority
+                                    />
+                                </div>
+
+                                {/* Header info */}
+                                <div className="flex items-center justify-between gap-2 relative z-10 pl-20 sm:pl-24 min-h-[44px]">
+                                    <div className="flex flex-col">
+                                        <span className="text-[11px] font-semibold text-gray-500 dark:text-[#848e9c] uppercase tracking-wider">
+                                            Launchpad Allocation
+                                        </span>
+                                        <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                                            QuantX AI (QTX)
+                                        </span>
+                                    </div>
+
+                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] border border-[#0072ED]/20 dark:border-[#FCD535]/25">
+                                        <Flash size={12} color="currentColor" variant="Bold" />
+                                        <span>{currentLockedPercent}% Auto Route</span>
+                                    </div>
+                                </div>
+
+                                {/* Main Allocated Metric with Metallic Border */}
+                                <MetalBorder
+                                    preset="chromatic"
+                                    borderRadius={24}
+                                    className="w-full relative z-10"
+                                >
+                                    <div className="p-4 sm:p-5 flex flex-col gap-2 rounded-[24px]">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1.5">
+                                                <Coin1 size={15} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
+                                                <span>Total QTX Accumulated</span>
+                                            </span>
+                                            <span className="font-mono text-[11px] text-gray-400">
+                                                180-Day Vault
+                                            </span>
+                                        </div>
+
+                                        <div className="flex items-baseline justify-between gap-2">
+                                            <span className="text-2xl sm:text-3xl font-extrabold font-mono text-gray-900 dark:text-white tracking-tight">
+                                                {loadingData && !allocation ? "..." : (allocation?.formattedAllocated || "0.00")}
+                                            </span>
+                                            <span className="text-sm sm:text-base font-bold text-[#0072ED] dark:text-[#FCD535]">
+                                                QTX
+                                            </span>
+                                        </div>
+
+                                        {/* Secondary Metrics & Vault Lock Status */}
+                                        <div className="pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
+                                            <span>Claimed: <strong className="font-mono text-gray-800 dark:text-gray-200">{allocation?.formattedClaimed || "0.00"} QTX</strong></span>
+
+                                            <div className="flex items-center gap-2">
+                                                <span className="flex items-center gap-1 text-[11px] text-gray-400 font-mono">
+                                                    <Clock size={12} color="currentColor" />
+                                                    <span>{lockStatus.text}</span>
+                                                </span>
+
+                                                {allocation?.isClaimable && allocation.finalQtxAmount > allocation.claimedQtxAmount && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleClaimTokens}
+                                                        disabled={busyAction === "claim"}
+                                                        className="px-2.5 py-1 rounded-full bg-emerald-500 text-white font-semibold text-[11px] hover:bg-emerald-600 transition-all cursor-pointer shadow-xs"
+                                                    >
+                                                        {busyAction === "claim" ? "Claiming..." : "Claim QTX"}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </MetalBorder>
+
+                                {/* Relayer Health & Authorization Status Strip */}
+                                <div className="relative z-10 flex flex-col gap-2 pt-1 text-xs">
+                                    <div className="flex items-center justify-between p-3 rounded-2xl bg-[#F8F9FB] dark:bg-[#191d24] border border-gray-100 dark:border-white/5">
+                                        <div className="flex items-center gap-2">
+                                            <ShieldTick size={16} color="currentColor" className="text-emerald-500 shrink-0" />
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-gray-900 dark:text-white text-[11px]">
+                                                    Automated Relayer Status
+                                                </span>
+                                                <span className="text-[10px] text-gray-400 font-mono">
+                                                    {RELAYER_ADDRESS.slice(0, 6)}...{RELAYER_ADDRESS.slice(-4)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {isRelayerApproved ? (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                                <TickCircle size={12} color="currentColor" variant="Bold" />
+                                                <span>Authorized</span>
+                                            </span>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={handleAuthorizeRelayer}
+                                                disabled={busyAction === "authorizeRelayer"}
+                                                className="px-3 py-1 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-[11px] hover:brightness-105 transition-all cursor-pointer shadow-xs"
+                                            >
+                                                {busyAction === "authorizeRelayer" ? "Authorizing..." : "Authorize Relayer"}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Additional Vault & Allocation Transparency Card */}
+                            <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <Lock1 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
+                                        <span>Vault Schedule & Token Contract</span>
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 text-xs pt-1">
+                                    <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex flex-col gap-1">
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Vesting Duration</span>
+                                        <span className="text-sm font-bold text-gray-900 dark:text-white font-mono">180 Days</span>
+                                        <span className="text-[10px] text-gray-500 dark:text-[#848e9c]">From first allocation</span>
+                                    </div>
+                                    <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex flex-col gap-1">
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Lock Status</span>
+                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">{lockStatus.isUnlocked ? "Unlocked" : "Locked"}</span>
+                                        <span className="text-[10px] text-gray-500 dark:text-[#848e9c] truncate">{lockStatus.text}</span>
+                                    </div>
+                                </div>
+                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                    <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Token Contract</span>
+                                    <a
+                                        href={`https://bscscan.com/token/${QTX_TOKEN_ADDRESS}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 font-mono text-[11px] text-[#0072ED] dark:text-[#FCD535] hover:underline"
+                                    >
+                                        <span>{QTX_TOKEN_ADDRESS.slice(0, 6)}...{QTX_TOKEN_ADDRESS.slice(-4)}</span>
+                                        <ExportSquare size={12} color="currentColor" />
+                                    </a>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Tab 2: Automated */}
+                    {activeTab === "automated" && (
+                        <motion.div
+                            key="automated"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.18 }}
+                            className="flex flex-col gap-4"
+                        >
+                            {/* Relayer Authorization Strip */}
+                            <div className="p-4 sm:p-5 rounded-[26px] bg-[#F4F4F7] dark:bg-[#14171d] flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <ShieldTick size={18} color="currentColor" className="text-emerald-500 shrink-0" />
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold text-gray-900 dark:text-white text-xs">
+                                                Automated Relayer Status
+                                            </span>
+                                            <span className="text-[10px] text-gray-400 font-mono">
+                                                Pipeline EOA: {RELAYER_ADDRESS.slice(0, 6)}...{RELAYER_ADDRESS.slice(-4)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {isRelayerApproved ? (
+                                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                            <TickCircle size={14} color="currentColor" variant="Bold" />
+                                            <span>Authorized</span>
+                                        </span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleAuthorizeRelayer}
+                                            disabled={busyAction === "authorizeRelayer"}
+                                            className="px-4 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs"
+                                        >
+                                            {busyAction === "authorizeRelayer" ? "Authorizing..." : "Authorize Relayer"}
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
+                                    One-time ERC-20 approval gives the relayer permission to convert your selected withdrawal proportion into QTX automatically.
+                                </p>
+                            </div>
+
+                            {/* Section 2: Automated Yield Route Controller (Radio Selector: 25% | 50% | 75% | 100%) */}
+                            <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Setting2 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
+                                        <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                            Automated Yield Route
+                                        </span>
+                                    </div>
+                                    <span className="text-[11px] text-gray-400 dark:text-[#848e9c]">
+                                        Active: <strong className="text-[#0072ED] dark:text-[#FCD535] font-mono">{currentLockedPercent}%</strong>
+                                    </span>
+                                </div>
+
+                                <p className="text-[11px] text-gray-500 dark:text-[#848e9c]">
+                                    Automatically converts your i6 withdrawal into QTX allocations without contract fees or manual transactions.
+                                </p>
+
+                                <div className="grid grid-cols-4 gap-2 pt-1">
+                                    {[25, 50, 75, 100].map((pct) => {
+                                        const isSelected = selectedRoutePercent === pct;
+                                        return (
+                                            <button
+                                                key={pct}
+                                                type="button"
+                                                onClick={() => setSelectedRoutePercent(pct)}
+                                                className={`py-2.5 px-2 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
+                                                    isSelected
+                                                        ? "bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border-[#0072ED] dark:border-[#FCD535] text-[#0072ED] dark:text-[#FCD535]"
+                                                        : "bg-white dark:bg-[#191d24] border-gray-200/60 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                                                }`}
+                                            >
+                                                <span className="text-sm font-bold font-mono">{pct}%</span>
+                                                <span className="text-[9px] uppercase tracking-wider font-semibold opacity-75">
+                                                    {pct === 75 ? "Default" : pct === 100 ? "Max" : "Route"}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {selectedRoutePercent !== currentLockedPercent && (
+                                    <div className="pt-2 flex items-center justify-between">
+                                        <span className="text-[11px] text-gray-400">
+                                            Update route from {currentLockedPercent}% → {selectedRoutePercent}%
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleUpdatePreference(selectedRoutePercent)}
+                                            disabled={busyAction === "updatePref"}
+                                            className="px-3.5 py-1.5 rounded-full bg-[#0072ED] dark:bg-[#FCD535] text-white dark:text-[#0b0e14] font-semibold text-xs hover:brightness-105 transition-all cursor-pointer shadow-xs"
+                                        >
+                                            {busyAction === "updatePref" ? "Updating..." : "Update Allocation"}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* How Automated Pipeline Works Card */}
+                            <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                                <span className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Flash size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
+                                    <span>How Automated Pipeline Works</span>
+                                </span>
+                                <div className="flex flex-col gap-2.5 pt-1 text-xs">
+                                    <div className="flex items-start gap-2.5">
+                                        <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+                                        <span className="text-gray-600 dark:text-[#848e9c]">Request withdrawal of your available earnings anytime.</span>
+                                    </div>
+                                    <div className="flex items-start gap-2.5">
+                                        <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+                                        <span className="text-gray-600 dark:text-[#848e9c]">The backend relayer routes <strong className="text-gray-900 dark:text-white">{currentLockedPercent}%</strong> into QuantX Launchpad contract at live market rates.</span>
+                                    </div>
+                                    <div className="flex items-start gap-2.5">
+                                        <div className="w-5 h-5 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 text-[#0072ED] dark:text-[#FCD535] text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
+                                        <span className="text-gray-600 dark:text-[#848e9c]">Remaining <strong className="text-gray-900 dark:text-white">{100 - currentLockedPercent}%</strong> is credited directly to your connected wallet. Zero gas fee on your end.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* Tab 3: Reinvest */}
+                    {activeTab === "reinvest" && (
+                        <motion.div
+                            key="reinvest"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.18 }}
+                            className="flex flex-col gap-4"
+                        >
+                            {/* Section 3: Live QTX Quote Calculator via PancakeSwap Multi-Hop */}
+                            <div className="relative flex flex-col">
+                                {/* Top Input Card: You Reinvest (i6) */}
+                                <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
+                                        <span className="font-medium">Live QTX Quote Calculator</span>
+                                        <span>
+                                            Wallet Bal: <strong className="text-gray-900 dark:text-white font-medium">{i6Balance} i6</strong>
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-3">
+                                        {/* Token Icon & Symbol */}
+                                        <div className="flex items-center gap-2.5 shrink-0">
+                                            <Image
+                                                src="/3d-icons/i6-coin-icon.webp"
+                                                alt="i6 Coin"
+                                                width={44}
+                                                height={44}
+                                                className="w-11 h-11 rounded-full object-contain"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-base text-gray-900 dark:text-white">Infinity Six</span>
+                                                <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">i6 Token</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Large Input Field */}
+                                        <div className="flex flex-col items-end flex-1">
+                                            <input
+                                                type="number"
+                                                placeholder="0.00"
+                                                min="0"
+                                                step="any"
+                                                value={reinvestAmount}
+                                                onChange={(e) => setReinvestAmount(e.target.value)}
+                                                className="w-full text-right bg-transparent text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white outline-none placeholder:text-gray-400 border-none font-mono"
+                                            />
+                                            <span className="text-xs text-gray-400 dark:text-[#848e9c] font-normal font-mono">
+                                                ≈${(amountVal * numericI6Price).toFixed(2)} USD
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Center Floating Exchange Icon Button */}
+                                <div className="flex justify-center -my-3.5 z-20 relative">
+                                    <div className="relative inline-flex items-center justify-center w-11 h-11 rounded-full transition-all duration-200 hover:scale-105">
+                                        <div
+                                            className="absolute inset-0 rounded-full pointer-events-none"
+                                            style={{
+                                                transform: "translateY(3.5px)",
+                                                background: isDark
+                                                    ? "linear-gradient(90deg, #ffe87a 0%, #FCD535 50%, #ffe87a 100%)"
+                                                    : "linear-gradient(90deg, #7CD4FD 0%, #0072ED 50%, #7CD4FD 100%)",
+                                                boxShadow: isDark
+                                                    ? "0px 6px 18px rgba(252, 213, 53, 0.3)"
+                                                    : "0px 6px 18px rgba(0, 114, 237, 0.32)",
+                                            }}
+                                        />
+                                        <div className="relative z-10 w-full h-full rounded-full bg-white dark:bg-[#14171d] text-[#0f172a] dark:text-white flex items-center justify-center shadow-xs border border-transparent dark:border-white/5">
+                                            <ArrowSwapHorizontal size={20} color="currentColor" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Estimated Output Card: QTX Allocated */}
+                                <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                                    <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
+                                        <span>PancakeSwap Route</span>
+                                        <span>[i6 → USDT → WBNB → QTX]</span>
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-3">
+                                        {/* QTX Token Badge */}
+                                        <div className="flex items-center gap-2.5 shrink-0">
+                                            <div className="w-11 h-11 rounded-full bg-[#0072ED]/10 dark:bg-[#FCD535]/15 flex items-center justify-center border border-[#0072ED]/20 dark:border-[#FCD535]/25">
+                                                <Image
+                                                    src="/3d-icons/swap.webp"
+                                                    alt="QTX"
+                                                    width={28}
+                                                    height={28}
+                                                    className="object-contain"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-base text-gray-900 dark:text-white">QuantX AI</span>
+                                                <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">Estimated QTX</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Estimated Allocation Details */}
+                                        <div className="flex flex-col items-end flex-1 truncate">
+                                            <div className="text-2xl sm:text-3xl font-medium text-gray-900 dark:text-white truncate font-mono">
+                                                {amountVal > 0 ? `${estimatedQtx} QTX` : "0.0000 QTX"}
+                                            </div>
+                                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                                                Live DEX Multi-Hop Quote
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Quick Presets */}
+                            <div className="flex items-center justify-between gap-2 px-1">
+                                {[25, 50, 75, 100].map((preset) => (
+                                    <button
+                                        key={preset}
+                                        type="button"
+                                        onClick={() => handlePreset(preset)}
+                                        className="flex-1 py-2 text-xs font-semibold rounded-xl bg-[#F4F4F7] dark:bg-[#191d24] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#20252d] active:scale-95 transition-all cursor-pointer"
+                                    >
+                                        {preset === 100 ? "MAX" : `${preset}%`}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Error / Status Messages */}
+                            {hasInsufficientBalance && (
+                                <div className="rounded-2xl p-3.5 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 text-xs flex items-center gap-2 border border-red-200 dark:border-red-900/30">
+                                    <CloseCircle size={18} color="currentColor" className="shrink-0" />
+                                    <span>Insufficient i6 token balance in your wallet.</span>
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Sticky Action Card: Authorize Relayer or Execute Instant Reinvestment (Only on Reinvest tab) */}
+                {activeTab === "reinvest" && (
+                    <StickyActionCard
+                        badge={{
+                            icon: "/3d-icons/swap.webp",
+                            label: "Processed through",
+                            title: "Relayer Pipeline EOA",
+                        }}
+                        bottomOffset="bottom-4 sm:bottom-6"
+                        mode={!isRelayerApproved ? "approve" : "swipe"}
+                        approveLabel="Authorize Relayer (Unlimited)"
+                        onApprove={handleAuthorizeRelayer}
+                        swipeLabel={
+                            isAmountValid
+                                ? `Swipe to Reinvest ${amountVal.toFixed(2)} i6`
+                                : "Enter an amount above"
+                        }
+                        onSwipe={handleInstantReinvest}
+                        disabled={
+                            !isConnected ||
+                            !isAmountValid ||
+                            busyAction !== "" ||
+                            hasInsufficientBalance
+                        }
+                        loading={busyAction === "authorizeRelayer" || busyAction === "instantReinvest"}
+                        disabledText={
+                            !isConnected
+                                ? "Connect Wallet"
+                                : hasInsufficientBalance
+                                ? "Insufficient i6 Balance"
+                                : !reinvestAmount || amountVal <= 0
+                                ? "Enter an i6 amount"
+                                : "Enter valid amount"
+                        }
+                        loadingText={statusMessage || (busyAction === "authorizeRelayer" ? "Authorizing Relayer..." : "Confirming via Relayer Pipeline...")}
+                    />
+                )}
 
                 {/* 3D Thermal Receipt Dispenser Modal */}
                 <TransactionReceiptModal

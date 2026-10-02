@@ -49,7 +49,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                          pathname.startsWith("/dashboard/investment-history") ||
                          pathname.startsWith("/dashboard/refer");
 
-    const hideBottomNav = isActionPage || isModalOpen;
+    const hideBottomNav = isActionPage || isModalOpen || pathname.startsWith("/dashboard/reinvest");
     const hideHeader = isActionPage || pathname.startsWith("/dashboard/reinvest");
 
     // Close wallet dropdown when clicking outside
