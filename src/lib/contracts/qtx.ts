@@ -95,6 +95,7 @@ export interface RelayerStatusResponse {
     nonce: number;
     allowance: string;
     hasAllowance: boolean;
+    hasPreference?: boolean;
     preference: {
         userAddress: string;
         percent: number;

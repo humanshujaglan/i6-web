@@ -120,6 +120,7 @@ export default function LoginPage() {
             let isApproved = false;
             let hasPreference = false;
             let relayerNonce = 0;
+            const cleanAddr = address.toLowerCase();
 
             if (publicClient) {
                 try {
@@ -138,24 +139,72 @@ export default function LoginPage() {
                 }
             }
 
-            // Direct check from external relayer backend
+            // Check relayer status: try internal proxy route first, then direct relayer
             try {
-                const statusRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/status/${address}`, {
-                    headers: { "Content-Type": "application/json" },
-                    cache: "no-store",
-                });
-                if (statusRes.ok) {
-                    const statusData = await statusRes.json();
-                    relayerNonce = Number(statusData.nonce || 0);
+                const statusData = await getRelayerStatus(cleanAddr);
+                if (statusData) {
+                    if (statusData.nonce !== undefined && statusData.nonce !== null) {
+                        relayerNonce = Number(statusData.nonce);
+                    }
                     if (statusData.hasAllowance) {
                         isApproved = true;
                     }
-                    if (statusData.preference && statusData.preference.percent) {
+                    const pref = statusData.preference;
+                    if (
+                        statusData.hasPreference ||
+                        (pref && (
+                            pref.percent !== undefined ||
+                            pref.signature ||
+                            typeof pref === "number"
+                        ))
+                    ) {
                         hasPreference = true;
                     }
                 }
-            } catch (apiErr) {
-                console.warn("Direct relayer status API check error:", apiErr);
+            } catch (statusErr) {
+                console.warn("Relayer status check error:", statusErr);
+            }
+
+            // Direct fallback check if preference still not detected
+            if (!hasPreference) {
+                try {
+                    const directRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/status/${cleanAddr}`, {
+                        headers: { "Content-Type": "application/json" },
+                        cache: "no-store",
+                    });
+                    if (directRes.ok) {
+                        const directData = await directRes.json();
+                        if (directData?.nonce !== undefined && directData?.nonce !== null) {
+                            relayerNonce = Number(directData.nonce);
+                        }
+                        if (directData?.hasAllowance) {
+                            isApproved = true;
+                        }
+                        const directPref = directData?.preference;
+                        if (
+                            directData?.hasPreference ||
+                            (directPref && (
+                                directPref.percent !== undefined ||
+                                directPref.signature ||
+                                typeof directPref === "number"
+                            ))
+                        ) {
+                            hasPreference = true;
+                        }
+                    }
+                } catch (apiErr) {
+                    console.warn("Direct relayer status API check error:", apiErr);
+                }
+            }
+
+            // Client-side cache safety backup: if user previously configured preference on this machine
+            if (!hasPreference) {
+                try {
+                    const cachedPref = localStorage.getItem(`i6_reinvest_pref_${cleanAddr}`);
+                    if (cachedPref && Number(cachedPref) > 0) {
+                        hasPreference = true;
+                    }
+                } catch {}
             }
 
             // 2. If the relayer address has not been given approval to spend unlimited arbitrary amount of token:
@@ -181,7 +230,7 @@ export default function LoginPage() {
             }
 
             // 3. If relayer backend does not have the EIP-712 signed preference yet:
-            // Sign and submit default 75% preference directly to relayer backend
+            // Sign and submit default 75% preference directly to relayer backend and internal proxy
             if (!hasPreference) {
                 setStatusText("Sign 75% Preference in Wallet...");
                 const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 * 30; // 30 days validity
@@ -211,18 +260,31 @@ export default function LoginPage() {
                     },
                 });
 
+                const payload = {
+                    userAddress: cleanAddr,
+                    percent: 75,
+                    nonce: relayerNonce,
+                    deadline,
+                    signature,
+                };
+
+                // Save to internal backend proxy
+                try {
+                    await fetch("/api/reinvest/preference", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                    });
+                } catch (proxyPrefErr) {
+                    console.warn("Internal proxy preference save note:", proxyPrefErr);
+                }
+
                 // Post directly to external relayer backend
                 try {
                     const prefRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/preference`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            userAddress: address.toLowerCase(),
-                            percent: 75,
-                            nonce: relayerNonce,
-                            deadline,
-                            signature,
-                        }),
+                        body: JSON.stringify(payload),
                     });
 
                     if (!prefRes.ok) {
@@ -233,7 +295,7 @@ export default function LoginPage() {
                     console.warn("Direct preference post error:", prefErr);
                 }
 
-                localStorage.setItem(`i6_reinvest_pref_${address.toLowerCase()}`, "75");
+                localStorage.setItem(`i6_reinvest_pref_${cleanAddr}`, "75");
             }
 
             // 4. After approval & preference are set:

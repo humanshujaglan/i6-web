@@ -30,7 +30,7 @@ interface PriceData {
     sparkline: number[];
 }
 
-const DEFAULT_SPARKLINE = [0.612, 0.618, 0.625, 0.621, 0.634, 0.629, 0.638, 0.632, 0.641, 0.637, 0.640, 0.6431];
+const DEFAULT_SPARKLINE = [24.85, 24.95, 25.10, 25.05, 25.30, 25.20, 25.45, 25.50, 25.65, 25.70, 25.80, 25.84];
 
 export const I6PriceCard = memo(function I6PriceCard({
     className = "",
@@ -38,8 +38,8 @@ export const I6PriceCard = memo(function I6PriceCard({
     customMarketCap,
     customVolume,
     customChange,
-    title = "Infinity Six",
-    symbol = "i6",
+    title = "QuantX AI",
+    symbol = "QTX",
     onCardClick,
 }: I6PriceCardProps) {
     const { theme } = useTheme();
@@ -48,24 +48,24 @@ export const I6PriceCard = memo(function I6PriceCard({
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [priceData, setPriceData] = useState<PriceData>({
-        symbol: "i6",
-        name: "Infinity Six",
-        displayName: "i6 Token",
-        price: 0.4532,
-        priceFormatted: "$0.4532",
-        change24h: -4.57,
-        marketCap: "$726.66K",
-        marketCapExact: "726656.00",
-        volume24h: "$21.49K",
-        volume24hExact: "21494.49",
-        liquidity: "$1.42M",
-        sparkline: [0.474, 0.471, 0.468, 0.465, 0.462, 0.460, 0.458, 0.456, 0.455, 0.454, 0.4535, 0.4532],
+        symbol: "QTX",
+        name: "QuantX AI",
+        displayName: "QuantX AI",
+        price: 25.84,
+        priceFormatted: "$25.84",
+        change24h: 2.77,
+        marketCap: "$2.58M",
+        marketCapExact: "2584431.00",
+        volume24h: "$136.28",
+        volume24hExact: "136.28",
+        liquidity: "$39.60K",
+        sparkline: DEFAULT_SPARKLINE,
     });
 
-    // Fetch live market data from /api/token-price
+    // Fetch live market data for QTX from /api/token-price?token=qtx
     const fetchLivePrice = async () => {
         try {
-            const res = await fetch("/api/token-price");
+            const res = await fetch("/api/token-price?token=qtx");
             if (res.ok) {
                 const data = await res.json();
                 setPriceData((prev) => ({
@@ -74,7 +74,7 @@ export const I6PriceCard = memo(function I6PriceCard({
                 }));
             }
         } catch (err) {
-            console.error("Failed to fetch live price:", err);
+            console.error("Failed to fetch live QTX price:", err);
         }
     };
 
@@ -87,12 +87,12 @@ export const I6PriceCard = memo(function I6PriceCard({
     const effectiveChange = customChange !== undefined ? customChange : priceData.change24h;
     const isNegative = effectiveChange < 0;
     const chartColor = isNegative ? "#F43F5E" : (isDark ? "#FCD535" : "#0072ED");
-    const effectivePrice = customPrice || priceData.priceFormatted || `$${priceData.price.toFixed(4)}`;
-    const effectiveMarketCap = customMarketCap || priceData.marketCap || "$726.66K";
-    const effectiveLiquidity = priceData.liquidity || "$1.42M";
-    const effectiveVolume = customVolume || priceData.volume24h || "$21.49K";
-    const effectiveTitle = title === "Bitcoin" ? (priceData.displayName || "Infinity Six") : title;
-    const effectiveSymbol = symbol === "BTC" ? (priceData.symbol || "i6") : symbol;
+    const effectivePrice = customPrice || priceData.priceFormatted || (priceData.price >= 1 ? `$${priceData.price.toFixed(2)}` : `$${priceData.price.toFixed(4)}`);
+    const effectiveMarketCap = customMarketCap || priceData.marketCap || "$2.58M";
+    const effectiveLiquidity = priceData.liquidity || "$39.60K";
+    const effectiveVolume = customVolume || priceData.volume24h || "$136.28";
+    const effectiveTitle = title === "Bitcoin" || title === "Infinity Six" ? (priceData.displayName || "QuantX AI") : title;
+    const effectiveSymbol = symbol === "BTC" || symbol === "i6" ? (priceData.symbol || "QTX") : symbol;
 
     // Full-Width Bottom Chart Geometry & Bézier Smoothing
     const { strokePath, fillPath, points, lastPoint, activePoint } = useMemo(() => {
@@ -123,7 +123,7 @@ export const I6PriceCard = memo(function I6PriceCard({
             const p1 = pts[i + 1];
             const cpx1 = p0.x + (p1.x - p0.x) / 2;
             const cpx2 = cpx1;
-            stroke += ` C ${cpx1.toFixed(1)} ${p0.y.toFixed(1)}, ${cpx2.toFixed(1)} ${p1.y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+            stroke += ` C ${cpx1.toFixed(1)} ${p0.y.toFixed(1)}, ${cpx2.toFixed(1)} ${p1.y.toFixed(1)}, ${p1.x.toFixed(1)} ${p1.x.toFixed(1)}`;
         }
 
         const last = pts[pts.length - 1];
@@ -157,23 +157,28 @@ export const I6PriceCard = memo(function I6PriceCard({
                 border: "1px solid rgba(255, 255, 255, 0.10)",
             }}
         >
-            {/* Top Row: Token Icon, Title (Left) & Liquidity, 24h Vol (Top Right Corner) */}
+            {/* Top Row: QTX Token Icon, Title (Left) & Liquidity, 24h Vol (Top Right Corner) */}
             <div className="relative z-10 flex items-center justify-between">
-                {/* Left: Coin Icon & Token Name (Reduced Size, No Ticker) */}
+                {/* Left: Coin Icon & Token Name */}
                 <div className="flex items-center gap-2.5">
-                    <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full shrink-0 flex items-center justify-center overflow-hidden">
+                    <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full shrink-0 flex items-center justify-center overflow-hidden bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border border-[#0072ED]/20 dark:border-[#FCD535]/25">
                         <Image
-                            src="/3d-icons/i6-coin-icon.webp"
-                            alt="i6 Token"
+                            src="/3d-icons/swap.webp"
+                            alt="QuantX AI (QTX)"
                             width={40}
                             height={40}
-                            className="w-full h-full object-contain"
+                            className="w-full h-full object-contain p-1"
                         />
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none">
-                        {effectiveTitle}
-                    </h3>
+                    <div className="flex flex-col">
+                        <h3 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none">
+                            {effectiveTitle}
+                        </h3>
+                        <span className="text-[11px] font-semibold text-[#0072ED] dark:text-[#FCD535] mt-0.5">
+                            {effectiveSymbol}
+                        </span>
+                    </div>
                 </div>
 
                 {/* Top Right Corner: Liquidity & 24h Volume */}
@@ -202,7 +207,7 @@ export const I6PriceCard = memo(function I6PriceCard({
             <div className="relative z-10 flex items-baseline justify-between mt-3 mb-1">
                 <div className="flex items-baseline gap-2">
                     <span className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
-                        {activePoint ? `$${activePoint.val.toFixed(4)}` : effectivePrice}
+                        {activePoint ? (activePoint.val >= 1 ? `$${activePoint.val.toFixed(2)}` : `$${activePoint.val.toFixed(4)}`) : effectivePrice}
                     </span>
                     <span className="text-xs text-gray-400 font-medium">USD</span>
                 </div>
@@ -257,7 +262,7 @@ export const I6PriceCard = memo(function I6PriceCard({
                 >
                     <defs>
                         {/* Dynamic Area Gradient based on increment/decrement */}
-                        <linearGradient id="i6-fullwidth-area" x1="0" y1="0" x2="0" y2="1">
+                        <linearGradient id="qtx-fullwidth-area" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor={chartColor} stopOpacity="0.32" />
                             <stop offset="60%" stopColor={chartColor} stopOpacity="0.08" />
                             <stop offset="100%" stopColor={chartColor} stopOpacity="0.0" />
@@ -271,7 +276,7 @@ export const I6PriceCard = memo(function I6PriceCard({
                     {/* Gradient Area Fill */}
                     <path
                         d={fillPath}
-                        fill="url(#i6-fullwidth-area)"
+                        fill="url(#qtx-fullwidth-area)"
                     />
 
                     {/* Main Curve Stroke */}
@@ -322,7 +327,7 @@ export const I6PriceCard = memo(function I6PriceCard({
                                 cy={activePoint.y} 
                                 r="4.5" 
                                 fill={chartColor} 
-                                stroke="#0b0e14"
+                                stroke="#0b0e14" 
                                 strokeWidth="1.5"
                             />
                         </g>
