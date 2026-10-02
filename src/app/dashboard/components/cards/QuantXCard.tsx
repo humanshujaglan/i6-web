@@ -93,26 +93,26 @@ export default function QuantXCard({
             }}
         >
             {/* Header: Logo and Title Aligned */}
-            <div className="flex items-center gap-2.5 sm:gap-3 relative z-10 min-h-[40px]">
-                <div className="relative w-9 h-9 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center">
+            <div className="flex items-center gap-2.5 sm:gap-3 relative z-10 min-h-[44px]">
+                <div className="relative w-[52px] h-[52px] sm:w-[58px] sm:h-[58px] -my-1 sm:-my-1.5 shrink-0 flex items-center justify-center">
                     <Image
                         src="/3d-icons/qtx-logo.png"
-                        alt="QuantX AI Reinvest"
-                        width={40}
-                        height={40}
+                        alt="QuantX AI"
+                        width={58}
+                        height={58}
                         className="w-full h-full object-contain drop-shadow-sm"
                         priority
                     />
                 </div>
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                     <span className="text-[16px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
-                        QuantX AI Reinvestment
+                        Your QuantX AI Investment
                     </span>
                 </div>
             </div>
 
             {/* Connected 2-Pill Exchange Layout */}
-            <div className="relative z-10 w-full grid grid-cols-2 gap-2 sm:gap-3 items-center mt-3 sm:mt-4">
+            <div className="relative z-10 w-full grid grid-cols-2 gap-2 sm:gap-3 items-center mt-1 sm:mt-1.5">
                 {/* Left Pill: Reinvestment Engine Status */}
                 <div
                     className="w-full min-w-0 flex items-center gap-2 sm:gap-2.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-[37px] border transition-all h-[56px]"

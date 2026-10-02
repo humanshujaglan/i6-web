@@ -78,6 +78,19 @@ function formatLockCountdown(lockExpiry: bigint): { text: string; isUnlocked: bo
 function ReinvestContent() {
     const { theme } = useTheme();
     const isDark = theme === "dark";
+
+    const incomeCardStyle = {
+        background: isDark
+            ? "linear-gradient(135deg, #14171d 0%, #0a0c0f 100%)"
+            : "linear-gradient(135deg, rgba(201, 224, 255, 0.6) 0%, #FFFFFF 85%)",
+        border: isDark
+            ? "1px solid rgba(255, 255, 255, 0.12)"
+            : "1.5px solid #FFFFFF",
+        boxShadow: isDark
+            ? "inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 4px 14px rgba(0, 0, 0, 0.4)"
+            : "0 3px 12px rgba(12, 50, 99, 0.06)",
+    };
+
     const { address, isConnected, chainId } = useAccount();
     const { open } = useAppKit();
     const { switchChainAsync } = useSwitchChain();
@@ -579,7 +592,7 @@ function ReinvestContent() {
 
                     <div className="flex flex-col items-center">
                         <span className="text-base font-semibold text-gray-900 dark:text-white">
-                            QuantX AI Reinvest
+                            QuantX AI Reinvestment
                         </span>
                         <span className="text-[11px] text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -733,33 +746,23 @@ function ReinvestContent() {
                         >
                             {/* Section 1: Launchpad Contract Allocated Amount Hero Card & Vesting Status */}
                             <div
-                                className="relative w-full overflow-hidden p-5 sm:p-6 flex flex-col gap-4 select-none rounded-[28px] transition-all duration-200"
-                                style={{
-                                    background: isDark
-                                        ? "linear-gradient(135deg, #14171d 0%, #0a0c0f 100%)"
-                                        : "linear-gradient(135deg, rgba(201, 224, 255, 0.65) 0%, #FFFFFF 85%)",
-                                    border: isDark
-                                        ? "1px solid rgba(255, 255, 255, 0.12)"
-                                        : "1.5px solid #FFFFFF",
-                                    boxShadow: isDark
-                                        ? "inset 0 1px 1px rgba(255, 255, 255, 0.18), 0 8px 30px rgba(0, 0, 0, 0.55)"
-                                        : "0 6px 24px rgba(12, 50, 99, 0.08)",
-                                }}
+                                className="relative w-full overflow-hidden p-4 sm:p-5 flex flex-col gap-3.5 select-none rounded-2xl transition-all duration-200"
+                                style={incomeCardStyle}
                             >
-                                {/* Top-left corner 3D swap icon */}
-                                <div className="absolute top-0 left-0 w-24 h-24 sm:w-28 sm:h-28 pointer-events-none z-0 overflow-hidden rounded-tl-[28px]">
+                                {/* Top-left corner 3D swap icon - shifted down nicely to align with header */}
+                                <div className="absolute top-3.5 sm:top-4 left-3.5 sm:left-4 w-14 h-14 sm:w-16 sm:h-16 pointer-events-none z-0">
                                     <Image
                                         src="/3d-icons/qtx-logo.png"
                                         alt="QuantX AI"
-                                        width={112}
-                                        height={112}
-                                        className="w-full h-full object-contain object-left-top p-1"
+                                        width={64}
+                                        height={64}
+                                        className="w-full h-full object-contain drop-shadow-sm"
                                         priority
                                     />
                                 </div>
 
                                 {/* Header info */}
-                                <div className="flex items-center justify-between gap-2 relative z-10 pl-20 sm:pl-24 min-h-[44px]">
+                                <div className="flex items-center justify-between gap-2 relative z-10 pl-16 sm:pl-20 min-h-[44px]">
                                     <div className="flex flex-col">
                                         <span className="text-[11px] font-semibold text-gray-500 dark:text-[#848e9c] uppercase tracking-wider">
                                             Launchpad Allocation
@@ -773,10 +776,10 @@ function ReinvestContent() {
                                 {/* Main Allocated Metric with Metallic Border */}
                                 <MetalBorder
                                     preset="chromatic"
-                                    borderRadius={24}
+                                    borderRadius={20}
                                     className="w-full relative z-10"
                                 >
-                                    <div className="p-4 sm:p-5 flex flex-col gap-2 rounded-[24px]">
+                                    <div className="p-4 sm:p-5 flex flex-col gap-2 rounded-[20px]">
                                         <div className="flex items-center justify-between text-xs">
                                             <span className="text-gray-500 dark:text-[#848e9c] font-medium flex items-center gap-1.5">
                                                 <Coin1 size={15} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
@@ -838,18 +841,8 @@ function ReinvestContent() {
 
                             {/* Dedicated Animated Next Compounding Timelock Timer Card */}
                             <div
-                                className="p-5 sm:p-6 rounded-[28px] flex flex-col items-center gap-3 transition-all"
-                                style={{
-                                    background: isDark
-                                        ? "linear-gradient(135deg, #14171d 0%, #0a0c0f 100%)"
-                                        : "linear-gradient(135deg, rgba(201, 224, 255, 0.45) 0%, #FFFFFF 85%)",
-                                    border: isDark
-                                        ? "1px solid rgba(255, 255, 255, 0.12)"
-                                        : "1.5px solid #FFFFFF",
-                                    boxShadow: isDark
-                                        ? "inset 0 1px 1px rgba(255, 255, 255, 0.12), 0 8px 30px rgba(0, 0, 0, 0.45)"
-                                        : "0 6px 24px rgba(12, 50, 99, 0.08)",
-                                }}
+                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col items-center gap-3 transition-all duration-200 select-none"
+                                style={incomeCardStyle}
                             >
                                 <CompoundingTimerWidget
                                     secondsRemaining={timelockSecondsRemaining}
@@ -874,26 +867,29 @@ function ReinvestContent() {
                             </div>
 
                             {/* Additional Vault & Allocation Transparency Card */}
-                            <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                            <div
+                                className="relative w-full overflow-hidden p-4 sm:p-5 flex flex-col gap-3 select-none rounded-2xl transition-all duration-200"
+                                style={incomeCardStyle}
+                            >
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                         <Lock1 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
                                         <span>Vault Schedule & Token Contract</span>
                                     </span>
                                 </div>
-                                <div className="grid grid-cols-2 gap-3 text-xs pt-1">
-                                    <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex flex-col gap-1">
+                                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 text-xs pt-1">
+                                    <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex flex-col gap-1">
                                         <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Vesting Duration</span>
                                         <span className="text-sm font-bold text-gray-900 dark:text-white font-mono">180 Days</span>
                                         <span className="text-[10px] text-gray-500 dark:text-[#848e9c]">From first allocation</span>
                                     </div>
-                                    <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex flex-col gap-1">
+                                    <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex flex-col gap-1">
                                         <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Lock Status</span>
                                         <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">{lockStatus.isUnlocked ? "Unlocked" : "Locked"}</span>
                                         <span className="text-[10px] text-gray-500 dark:text-[#848e9c] truncate">{lockStatus.text}</span>
                                     </div>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
                                     <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Market Price</span>
                                     <div className="flex items-center gap-1.5 font-mono text-[11px]">
                                         <span className="font-bold text-gray-900 dark:text-white">${qtxPrice.toFixed(2)} USD</span>
@@ -904,7 +900,7 @@ function ReinvestContent() {
                                         )}
                                     </div>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
                                     <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Timelock Contract</span>
                                     <a
                                         href={`https://bscscan.com/address/${QTX_TIMELOCK_ADDRESS}`}
@@ -916,13 +912,13 @@ function ReinvestContent() {
                                         <ExportSquare size={12} color="currentColor" />
                                     </a>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
                                     <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">Timelock Total Allocated</span>
                                     <span className="font-mono text-[11px] font-semibold text-gray-900 dark:text-white">
                                         {timelockInfo?.totalAllocatedToUsers || "88.55"} QTX
                                     </span>
                                 </div>
-                                <div className="p-3 rounded-2xl bg-white dark:bg-[#191d24] border border-gray-200/60 dark:border-white/5 flex items-center justify-between text-xs">
+                                <div className="p-3 rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
                                     <span className="text-gray-500 dark:text-[#848e9c] text-[11px]">QTX Token Contract</span>
                                     <a
                                         href={`https://bscscan.com/token/${QTX_TOKEN_ADDRESS}`}
@@ -949,7 +945,10 @@ function ReinvestContent() {
                             className="flex flex-col gap-4"
                         >
                             {/* Automated Routing Authorization Strip */}
-                            <div className="p-4 sm:p-5 rounded-[26px] bg-[#F4F4F7] dark:bg-[#14171d] flex flex-col gap-3">
+                            <div 
+                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3 select-none transition-all duration-200"
+                                style={incomeCardStyle}
+                            >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <ShieldTick size={18} color="currentColor" className="text-emerald-500 shrink-0" />
@@ -985,7 +984,10 @@ function ReinvestContent() {
                             </div>
 
                             {/* Section 2: Automated Yield Route Controller (Radio Selector: 25% | 50% | 75% | 100%) */}
-                            <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                            <div 
+                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3.5 select-none transition-all duration-200"
+                                style={incomeCardStyle}
+                            >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <Setting2 size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
@@ -1010,10 +1012,10 @@ function ReinvestContent() {
                                                 key={pct}
                                                 type="button"
                                                 onClick={() => setSelectedRoutePercent(pct)}
-                                                className={`py-2.5 px-2 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
+                                                className={`py-2.5 px-2 rounded-xl flex flex-col items-center justify-center gap-1 transition-all cursor-pointer border ${
                                                     isSelected
                                                         ? "bg-[#0072ED]/10 dark:bg-[#FCD535]/15 border-[#0072ED] dark:border-[#FCD535] text-[#0072ED] dark:text-[#FCD535]"
-                                                        : "bg-white dark:bg-[#191d24] border-gray-200/60 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
+                                                        : "bg-white/80 dark:bg-white/5 border-black/5 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:border-gray-300"
                                                 }`}
                                             >
                                                 <span className="text-sm font-bold font-mono">{pct}%</span>
@@ -1043,7 +1045,10 @@ function ReinvestContent() {
                             </div>
 
                             {/* How Automated Routing Works Card */}
-                            <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                            <div 
+                                className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3 select-none transition-all duration-200"
+                                style={incomeCardStyle}
+                            >
                                 <span className="text-xs font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                     <Flash size={16} color="currentColor" className="text-[#0072ED] dark:text-[#FCD535]" />
                                     <span>How Automated Routing Works</span>
@@ -1079,16 +1084,12 @@ function ReinvestContent() {
                             {/* Section 3: Live QTX Quote Calculator via PancakeSwap Multi-Hop */}
                             <div className="relative flex flex-col">
                                 {/* Top Input Card: You Reinvest (i6) */}
-                                <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                                <div 
+                                    className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3 select-none transition-all duration-200"
+                                    style={incomeCardStyle}
+                                >
                                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
-                                        <span className="font-medium flex items-center gap-1.5">
-                                            <span>Live QTX Quote Calculator</span>
-                                            {qtxPrice > 0 && (
-                                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-white dark:bg-[#1f242d] text-gray-700 dark:text-gray-300 border border-gray-200/60 dark:border-white/5">
-                                                    1 QTX = ${qtxPrice.toFixed(2)}
-                                                </span>
-                                            )}
-                                        </span>
+                                        <span>You Reinvest</span>
                                         <span>
                                             Wallet Bal: <strong className="text-gray-900 dark:text-white font-medium">{i6Balance} i6</strong>
                                         </span>
@@ -1106,7 +1107,7 @@ function ReinvestContent() {
                                             />
                                             <div className="flex flex-col">
                                                 <span className="font-semibold text-base text-gray-900 dark:text-white">Infinity Six</span>
-                                                <span className="text-[10px] text-gray-400 dark:text-[#848e9c]">i6 Token</span>
+                                                <span className="text-[12px] text-gray-400 dark:text-[#848e9c]">i6 Token</span>
                                             </div>
                                         </div>
 
@@ -1150,7 +1151,10 @@ function ReinvestContent() {
                                 </div>
 
                                 {/* Bottom Estimated Output Card: QTX Allocated */}
-                                <div className="bg-[#F4F4F7] dark:bg-[#14171d] rounded-[26px] p-5 flex flex-col gap-3">
+                                <div 
+                                    className="relative w-full overflow-hidden p-4 sm:p-5 rounded-2xl flex flex-col gap-3 select-none transition-all duration-200"
+                                    style={incomeCardStyle}
+                                >
                                     <div className="flex items-center justify-between text-xs text-gray-500 dark:text-[#848e9c]">
                                         <span>Exchange Route</span>
                                         <span className="font-semibold text-gray-800 dark:text-gray-200">i6 → QTX</span>
@@ -1201,7 +1205,7 @@ function ReinvestContent() {
                                         key={preset}
                                         type="button"
                                         onClick={() => handlePreset(preset)}
-                                        className="flex-1 py-2 text-xs font-semibold rounded-xl bg-[#F4F4F7] dark:bg-[#191d24] text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#20252d] active:scale-95 transition-all cursor-pointer"
+                                        className="flex-1 py-2 text-xs font-semibold rounded-xl bg-white/70 dark:bg-white/5 border border-black/5 dark:border-white/5 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-white/10 active:scale-95 transition-all cursor-pointer shadow-xs"
                                     >
                                         {preset === 100 ? "MAX" : `${preset}%`}
                                     </button>

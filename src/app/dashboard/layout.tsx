@@ -354,7 +354,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             className={`nav-item ${pathname.startsWith("/dashboard/reinvest") ? "active" : ""}`}
                         >
                             <ArrowSwapHorizontal size={18} color="currentColor" />
-                            <span>QuantX AI Reinvest</span>
+                            <span>QuantX AI</span>
                         </Link>
                     </div>
 
@@ -407,7 +407,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     key={tab.href}
                                     href={tab.href}
                                     aria-label={tab.name || tab.ariaLabel || "Tab"}
-                                    className={`relative flex flex-row items-center justify-center gap-1.5 sm:gap-2 ${tab.name ? "px-3.5 sm:px-5 py-2 sm:py-2.5" : "px-2 sm:px-2.5 py-1 sm:py-1.5"} rounded-[26px] text-[12px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                                    className={`relative flex flex-row items-center justify-center gap-1.5 sm:gap-2 ${tab.name ? "px-3.5 sm:px-5 py-2 sm:py-2.5" : "px-5 sm:px-6 py-1 sm:py-1.5"} rounded-[26px] text-[12px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
                                         isActive
                                             ? (isDark ? "text-[#0b0e14] font-semibold" : "text-[#0072ED] font-normal")
                                             : (isDark ? "text-[#848e9c] hover:text-white font-normal" : "text-white/85 hover:text-white hover:bg-white/10 font-normal")
@@ -438,7 +438,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                                 className={`object-contain transition-transform duration-200 ${isActive ? "scale-105 drop-shadow-sm" : "opacity-95 hover:opacity-100"}`}
                                             />
                                             {tab.hasRedDot && (
-                                                <span className="absolute top-0 right-0 flex h-2.5 w-2.5 z-20 pointer-events-none">
+                                                <span className="absolute top-2.5 right-1.5 flex h-2.5 w-2.5 z-20 pointer-events-none">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                                                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-[1.5px] border-white dark:border-[#14171d]" />
                                                 </span>
