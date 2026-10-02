@@ -159,26 +159,16 @@ export const I6PriceCard = memo(function I6PriceCard({
         >
             {/* Top Row: QTX Token Icon, Title (Left) & Liquidity, 24h Vol (Top Right Corner) */}
             <div className="relative z-10 flex items-center justify-between">
-                {/* Left: Coin Icon & Token Name */}
-                <div className="flex items-center gap-2.5">
-                    <div className="relative w-[47px] h-[47px] sm:w-[52px] sm:h-[52px] shrink-0 flex items-center justify-center">
-                        <Image
-                            src="/3d-icons/qtx-logo.png"
-                            alt="QuantX AI (QTX)"
-                            width={52}
-                            height={52}
-                            className="w-full h-full object-contain"
-                        />
-                    </div>
-
-                    <div className="flex flex-col">
-                        <h3 className="text-base sm:text-lg font-bold text-white tracking-tight leading-none">
-                            {effectiveTitle}
-                        </h3>
-                        <span className="text-[11px] font-semibold text-[#0072ED] dark:text-[#FCD535] mt-0.5">
-                            {effectiveSymbol}
-                        </span>
-                    </div>
+                {/* Left: Prominent QTX Logo */}
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 shrink-0 flex items-center justify-center">
+                    <Image
+                        src="/3d-icons/qtx-logo.png"
+                        alt="QuantX AI"
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-contain drop-shadow-md"
+                        priority
+                    />
                 </div>
 
                 {/* Top Right Corner: Liquidity & 24h Volume */}

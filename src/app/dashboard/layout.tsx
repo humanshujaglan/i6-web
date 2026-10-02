@@ -395,7 +395,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             { name: "Home", href: "/dashboard", icon: Home2, exact: true },
                             { name: "Business", href: "/dashboard/business", icon: Briefcase, matchPrefix: ["/dashboard/business", "/dashboard/directs", "/dashboard/downlines"] },
                             { name: "Rank", href: "/dashboard/salary-status", icon: Crown, matchPrefix: ["/dashboard/salary-status"] },
-                            { name: "Reinvest", href: "/dashboard/reinvest", imageIcon: "/3d-icons/swap.webp", matchPrefix: ["/dashboard/reinvest"] },
+                            { name: "", href: "/dashboard/reinvest", imageIcon: "/3d-icons/qtx-logo.png", matchPrefix: ["/dashboard/reinvest"], ariaLabel: "QuantX AI" },
                         ].map((tab) => {
                             const isActive = tab.exact 
                                 ? pathname === tab.href 
@@ -404,9 +404,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                             return (
                                 <Link
-                                    key={tab.name}
+                                    key={tab.href}
                                     href={tab.href}
-                                    className={`relative flex flex-row items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-[26px] text-[12px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                                    aria-label={tab.name || tab.ariaLabel || "Tab"}
+                                    className={`relative flex flex-row items-center justify-center gap-1.5 sm:gap-2 ${tab.name ? "px-3.5 sm:px-5" : "px-3 sm:px-3.5"} py-2 sm:py-2.5 rounded-[26px] text-[12px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
                                         isActive
                                             ? (isDark ? "text-[#0b0e14] font-semibold" : "text-[#0072ED] font-normal")
                                             : (isDark ? "text-[#848e9c] hover:text-white font-normal" : "text-white/85 hover:text-white hover:bg-white/10 font-normal")
@@ -428,13 +429,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         />
                                     )}
                                     {tab.imageIcon ? (
-                                        <div className="relative z-10 w-5 h-5 flex items-center justify-center shrink-0">
+                                        <div className="relative z-10 w-6 h-6 flex items-center justify-center shrink-0">
                                             <Image
                                                 src={tab.imageIcon}
-                                                alt={tab.name}
-                                                width={20}
-                                                height={20}
-                                                className={`object-contain transition-transform duration-200 ${isActive ? "scale-110 drop-shadow-sm" : "opacity-80"}`}
+                                                alt={tab.name || tab.ariaLabel || "QTX"}
+                                                width={24}
+                                                height={24}
+                                                className={`object-contain transition-transform duration-200 ${isActive ? "scale-110 drop-shadow-sm" : "opacity-90 hover:opacity-100"}`}
                                             />
                                         </div>
                                     ) : IconComponent ? (
@@ -445,7 +446,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                             className="relative z-10"
                                         />
                                     ) : null}
-                                    <span className="inline-block leading-none relative z-10 tracking-tight font-normal">{tab.name}</span>
+                                    {tab.name && (
+                                        <span className="inline-block leading-none relative z-10 tracking-tight font-normal">{tab.name}</span>
+                                    )}
                                 </Link>
                             );
                         })}

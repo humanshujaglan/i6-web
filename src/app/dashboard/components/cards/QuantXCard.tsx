@@ -92,22 +92,20 @@ export default function QuantXCard({
                     : "0 3px 12px rgba(12, 50, 99, 0.06)",
             }}
         >
-            {/* Top-left stuck corner 3D QTX emblem */}
-            <div className="absolute top-0 left-0 w-20 h-20 sm:w-24 sm:h-24 pointer-events-none z-0 overflow-hidden rounded-tl-2xl">
-                <Image
-                    src="/3d-icons/qtx-logo.png"
-                    alt="QuantX AI Reinvest"
-                    width={96}
-                    height={96}
-                    className="w-full h-full object-contain object-left-top p-1"
-                    priority
-                />
-            </div>
-
-            {/* Header: Title */}
-            <div className="flex items-center justify-between gap-2 relative z-10 pl-16 sm:pl-20 min-h-[36px]">
+            {/* Header: Logo and Title Aligned */}
+            <div className="flex items-center gap-2.5 sm:gap-3 relative z-10 min-h-[40px]">
+                <div className="relative w-9 h-9 sm:w-10 sm:h-10 shrink-0 flex items-center justify-center">
+                    <Image
+                        src="/3d-icons/qtx-logo.png"
+                        alt="QuantX AI Reinvest"
+                        width={40}
+                        height={40}
+                        className="w-full h-full object-contain drop-shadow-sm"
+                        priority
+                    />
+                </div>
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <span className="text-[18px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
+                    <span className="text-[16px] sm:text-base font-semibold text-gray-900 dark:text-white truncate">
                         QuantX AI Reinvestment
                     </span>
                 </div>
