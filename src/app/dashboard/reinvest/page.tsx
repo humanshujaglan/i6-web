@@ -622,7 +622,7 @@ function ReinvestContent() {
                 </div>
 
                 {/* Live QTX Market Price & Telemetry Card */}
-                <I6PriceCard />
+                {/* <I6PriceCard /> */}
 
                 {/* Capsule Segmented Tab Switcher */}
                 <div className="flex items-center p-1 bg-[#F4F4F7] dark:bg-[#14171d] rounded-full max-w-md mx-auto w-full relative">
@@ -887,7 +887,7 @@ function ReinvestContent() {
                                 <CompoundingTimerWidget
                                     secondsRemaining={timelockSecondsRemaining}
                                     hasActiveInvestments={true}
-                                    title="Next Compounding"
+                                    title="Timelock Release Time"
                                     subtitle="180-Day QTX Timelock Vault"
                                     hideProjection={true}
                                     idPrefix="qtx-timelock"
