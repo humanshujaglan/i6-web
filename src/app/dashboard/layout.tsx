@@ -395,7 +395,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             { name: "Home", href: "/dashboard", icon: Home2, exact: true },
                             { name: "Business", href: "/dashboard/business", icon: Briefcase, matchPrefix: ["/dashboard/business", "/dashboard/directs", "/dashboard/downlines"] },
                             { name: "Rank", href: "/dashboard/salary-status", icon: Crown, matchPrefix: ["/dashboard/salary-status"] },
-                            { name: "", href: "/dashboard/reinvest", imageIcon: "/3d-icons/qtx-logo.png", matchPrefix: ["/dashboard/reinvest"], ariaLabel: "QuantX AI" },
+                            { name: "", href: "/dashboard/reinvest", imageIcon: "/3d-icons/qtx-logo.png", matchPrefix: ["/dashboard/reinvest"], ariaLabel: "QuantX AI", hasRedDot: true },
                         ].map((tab) => {
                             const isActive = tab.exact 
                                 ? pathname === tab.href 
@@ -407,7 +407,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     key={tab.href}
                                     href={tab.href}
                                     aria-label={tab.name || tab.ariaLabel || "Tab"}
-                                    className={`relative flex flex-row items-center justify-center gap-1.5 sm:gap-2 ${tab.name ? "px-3.5 sm:px-5" : "px-3 sm:px-3.5"} py-2 sm:py-2.5 rounded-[26px] text-[12px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
+                                    className={`relative flex flex-row items-center justify-center gap-1.5 sm:gap-2 ${tab.name ? "px-3.5 sm:px-5 py-2 sm:py-2.5" : "px-2 sm:px-2.5 py-1 sm:py-1.5"} rounded-[26px] text-[12px] sm:text-sm whitespace-nowrap transition-all duration-200 ${
                                         isActive
                                             ? (isDark ? "text-[#0b0e14] font-semibold" : "text-[#0072ED] font-normal")
                                             : (isDark ? "text-[#848e9c] hover:text-white font-normal" : "text-white/85 hover:text-white hover:bg-white/10 font-normal")
@@ -429,14 +429,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         />
                                     )}
                                     {tab.imageIcon ? (
-                                        <div className="relative z-10 w-6 h-6 flex items-center justify-center shrink-0">
+                                        <div className="relative z-10 w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center shrink-0">
                                             <Image
                                                 src={tab.imageIcon}
                                                 alt={tab.name || tab.ariaLabel || "QTX"}
-                                                width={24}
-                                                height={24}
-                                                className={`object-contain transition-transform duration-200 ${isActive ? "scale-110 drop-shadow-sm" : "opacity-90 hover:opacity-100"}`}
+                                                width={44}
+                                                height={44}
+                                                className={`object-contain transition-transform duration-200 ${isActive ? "scale-105 drop-shadow-sm" : "opacity-95 hover:opacity-100"}`}
                                             />
+                                            {tab.hasRedDot && (
+                                                <span className="absolute top-0 right-0 flex h-2.5 w-2.5 z-20 pointer-events-none">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-[1.5px] border-white dark:border-[#14171d]" />
+                                                </span>
+                                            )}
                                         </div>
                                     ) : IconComponent ? (
                                         <IconComponent
