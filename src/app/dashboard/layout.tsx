@@ -73,6 +73,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         } catch (e) {}
         document.cookie = "user_wallet=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
         localStorage.removeItem("user_wallet");
+        try {
+            sessionStorage.removeItem("qtx_launch_pending");
+            sessionStorage.removeItem("qtx_portal_session_seen");
+        } catch {}
         router.push("/login");
     };
 

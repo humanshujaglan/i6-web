@@ -54,6 +54,7 @@ import {
 import CopyAlert from "./components/CopyAlert";
 import CompoundingTimerWidget from "./components/widgets/CompoundingTimerWidget";
 import CompoundingStreakModal from "./components/modals/CompoundingStreakModal";
+import QuantXLaunchModal from "./components/modals/QuantXLaunchModal";
 import { useTheme } from "@/app/context/ThemeContext";
 import { GENESIS_ADDRESS } from "@/lib/contracts/abis";
 
@@ -199,6 +200,9 @@ export default function DashboardPage() {
     const [showLevelMatrix, setShowLevelMatrix] = useState(false);
     const [workingSubTab, setWorkingSubTab] = useState<"total" | "direct" | "level" | "upline" | "rank">("total");
     const [manualStreakOpen, setManualStreakOpen] = useState(false);
+    const [isStreakModalActive, setIsStreakModalActive] = useState(false);
+    const [qtxLaunchModalOpen, setQtxLaunchModalOpen] = useState(false);
+    const hasCheckedLaunchRef = useRef(false);
 
     const [liveData, setLiveData] = useState({
         totalAvailable: 0,
@@ -577,6 +581,63 @@ export default function DashboardPage() {
             yieldText: `${volPerc / 10}% of RWP`
         });
     }
+
+    // Portal entry launch celebration detection (everytime user logs into the portal)
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            if (!sessionStorage.getItem("qtx_portal_session_seen")) {
+                sessionStorage.setItem("qtx_portal_session_seen", "true");
+                sessionStorage.setItem("qtx_launch_pending", "true");
+            }
+        }
+    }, []);
+
+    // Dismiss handler for compounding streak modal (called when user crosses 'X' or clicks 'Continue Compounding')
+    const handleStreakDismiss = () => {
+        setIsStreakModalActive(false);
+        setManualStreakOpen(false);
+        if (typeof window !== "undefined" && sessionStorage.getItem("qtx_launch_pending") === "true") {
+            sessionStorage.removeItem("qtx_launch_pending");
+            hasCheckedLaunchRef.current = true;
+            setTimeout(() => {
+                setQtxLaunchModalOpen(true);
+            }, 280);
+        }
+    };
+
+    // Fallback: If compounding streak modal does NOT have to be shown on entry, show QTX launch modal immediately
+    useEffect(() => {
+        if (!userAddress || hasCheckedLaunchRef.current) return;
+
+        const timer = setTimeout(() => {
+            if (typeof window === "undefined") return;
+            const isPending = sessionStorage.getItem("qtx_launch_pending") === "true";
+            if (!isPending) return;
+
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const storageKey = `i6_streak_${userAddress.toLowerCase()}`;
+            let alreadyShownStreakToday = false;
+            try {
+                const raw = localStorage.getItem(storageKey);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.lastDate === todayStr) {
+                        alreadyShownStreakToday = true;
+                    }
+                }
+            } catch {}
+
+            const willStreakModalShow = !alreadyShownStreakToday && totalDepositsFloat > 0 && streakDays > 0;
+
+            if (!willStreakModalShow && !isStreakModalActive && !manualStreakOpen) {
+                hasCheckedLaunchRef.current = true;
+                sessionStorage.removeItem("qtx_launch_pending");
+                setQtxLaunchModalOpen(true);
+            }
+        }, 450);
+
+        return () => clearTimeout(timer);
+    }, [userAddress, totalDepositsFloat, streakDays, isStreakModalActive, manualStreakOpen]);
 
     return (
         <div className="dashboard-container">
@@ -1015,6 +1076,14 @@ export default function DashboardPage() {
                     dailyEarning={dailyEarning}
                     isOpen={manualStreakOpen ? true : undefined}
                     onClose={() => setManualStreakOpen(false)}
+                    onAutoOpen={() => setIsStreakModalActive(true)}
+                    onDismiss={handleStreakDismiss}
+                />
+
+                {/* QuantX AI New Launch Celebration Modal */}
+                <QuantXLaunchModal
+                    isOpen={qtxLaunchModalOpen}
+                    onClose={() => setQtxLaunchModalOpen(false)}
                 />
 
             </div>

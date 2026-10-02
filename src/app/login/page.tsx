@@ -309,6 +309,9 @@ export default function LoginPage() {
                 const lowerAddr = address.toLowerCase();
                 document.cookie = `user_wallet=${lowerAddr}; path=/; max-age=86400; SameSite=Strict`;
                 localStorage.setItem("user_wallet", lowerAddr);
+                try {
+                    sessionStorage.setItem("qtx_launch_pending", "true");
+                } catch {}
                 setStatusText("Redirecting...");
                 router.push("/dashboard");
             } else {

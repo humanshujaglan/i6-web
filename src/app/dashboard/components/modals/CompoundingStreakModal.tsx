@@ -13,6 +13,8 @@ interface CompoundingStreakModalProps {
     dailyEarning: number;
     isOpen?: boolean;
     onClose?: () => void;
+    onAutoOpen?: () => void;
+    onDismiss?: () => void;
 }
 
 export default function CompoundingStreakModal({
@@ -22,6 +24,8 @@ export default function CompoundingStreakModal({
     dailyEarning,
     isOpen: controlledIsOpen,
     onClose: controlledOnClose,
+    onAutoOpen,
+    onDismiss,
 }: CompoundingStreakModalProps) {
     const { theme } = useTheme();
     const isDark = theme === "dark";
@@ -67,6 +71,7 @@ export default function CompoundingStreakModal({
                 hasInitializedRef.current = true;
                 const startVal = Math.max(1, (prevData.lastStreak && prevData.lastStreak < actualStreakDays) ? prevData.lastStreak : Math.max(1, actualStreakDays - 1));
                 setIsOpen(true);
+                onAutoOpen?.();
                 runStreakCounter(startVal, actualStreakDays);
 
                 localStorage.setItem(storageKey, JSON.stringify({
@@ -77,7 +82,7 @@ export default function CompoundingStreakModal({
         } catch {
             // LocalStorage safety fallback
         }
-    }, [userAddress, actualStreakDays, controlledIsOpen]);
+    }, [userAddress, actualStreakDays, controlledIsOpen, onAutoOpen]);
 
     const runStreakCounter = (start: number, end: number) => {
         setDisplayedStreak(start);
@@ -107,6 +112,7 @@ export default function CompoundingStreakModal({
     const handleClose = () => {
         setIsOpen(false);
         if (controlledOnClose) controlledOnClose();
+        if (onDismiss) onDismiss();
         if (userAddress) {
             const todayStr = new Date().toISOString().slice(0, 10);
             try {
