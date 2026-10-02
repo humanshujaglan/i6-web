@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -46,6 +46,7 @@ export default function QuantXLaunchModal({
 
     const titleRef = useRef<HTMLDivElement>(null);
     const subtitleRef = useRef<HTMLDivElement>(null);
+    const [emojiStage, setEmojiStage] = useState<"burst" | "retract" | "gone">("burst");
 
     useEffect(() => {
         if (dash?.setIsModalOpen) {
@@ -57,6 +58,29 @@ export default function QuantXLaunchModal({
             }
         };
     }, [isOpen, dash]);
+
+    // Retract emojis inward back to the center and vanish after a few seconds
+    useEffect(() => {
+        if (!isOpen) {
+            setEmojiStage("burst");
+            return;
+        }
+
+        setEmojiStage("burst");
+
+        const retractTimer = setTimeout(() => {
+            setEmojiStage("retract");
+        }, 2400);
+
+        const goneTimer = setTimeout(() => {
+            setEmojiStage("gone");
+        }, 3200);
+
+        return () => {
+            clearTimeout(retractTimer);
+            clearTimeout(goneTimer);
+        };
+    }, [isOpen]);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -193,51 +217,76 @@ export default function QuantXLaunchModal({
 
                     {/* Center Stage: QTX 3D Logo with Bursting Celebration Emojis */}
                     <div className="relative w-44 h-44 flex items-center justify-center my-1">
-                        {/* Radial Bursting Celebration Emojis */}
-                        {CELEBRATION_EMOJIS.map((item, idx) => {
-                            const rad = (item.angle * Math.PI) / 180;
-                            const targetX = Math.round(Math.cos(rad) * item.dist);
-                            const targetY = Math.round(Math.sin(rad) * item.dist);
+                        {/* Radial Celebration Emojis that burst outward and then suck inward & vanish */}
+                        {emojiStage !== "gone" &&
+                            CELEBRATION_EMOJIS.map((item, idx) => {
+                                const rad = (item.angle * Math.PI) / 180;
+                                const targetX = Math.round(Math.cos(rad) * item.dist);
+                                const targetY = Math.round(Math.sin(rad) * item.dist);
+                                const targetRot = (idx % 2 === 0 ? 1 : -1) * (15 + (idx * 12) % 30);
+                                const isRetracting = emojiStage === "retract";
 
-                            return (
-                                <motion.div
-                                    key={idx}
-                                    initial={{ scale: 0, x: 0, y: 0, opacity: 0 }}
-                                    animate={{
-                                        scale: [0, 1.45, 1],
-                                        x: [0, targetX * 1.15, targetX],
-                                        y: [0, targetY * 1.15, targetY],
-                                        opacity: [0, 1, 1],
-                                        rotate: [0, (idx % 2 === 0 ? 1 : -1) * (15 + (idx * 12) % 30)],
-                                    }}
-                                    transition={{
-                                        duration: 0.85,
-                                        delay: 0.18 + idx * 0.025,
-                                        ease: [0.34, 1.56, 0.64, 1],
-                                    }}
-                                    className="absolute pointer-events-none select-none z-10"
-                                    style={{
-                                        fontSize: `${item.size}px`,
-                                        filter: "drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3))",
-                                    }}
-                                >
-                                    <motion.span
-                                        animate={{
-                                            y: [-3, 3, -3],
-                                            rotate: [-4, 4, -4],
+                                return (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ scale: 0, x: 0, y: 0, opacity: 0, rotate: 0 }}
+                                        animate={
+                                            isRetracting
+                                                ? {
+                                                      scale: 0,
+                                                      x: 0,
+                                                      y: 0,
+                                                      opacity: 0,
+                                                      rotate: 0,
+                                                  }
+                                                : {
+                                                      scale: [0, 1.45, 1],
+                                                      x: [0, targetX * 1.15, targetX],
+                                                      y: [0, targetY * 1.15, targetY],
+                                                      opacity: [0, 1, 1],
+                                                      rotate: [0, targetRot * 1.2, targetRot],
+                                                  }
+                                        }
+                                        transition={
+                                            isRetracting
+                                                ? {
+                                                      duration: 0.65,
+                                                      delay: idx * 0.015,
+                                                      ease: [0.55, 0.055, 0.675, 0.19], // Smooth inward suction curve
+                                                  }
+                                                : {
+                                                      duration: 0.85,
+                                                      delay: 0.18 + idx * 0.025,
+                                                      ease: [0.34, 1.56, 0.64, 1],
+                                                  }
+                                        }
+                                        className="absolute pointer-events-none select-none z-10"
+                                        style={{
+                                            fontSize: `${item.size}px`,
+                                            filter: "drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3))",
                                         }}
-                                        transition={{
-                                            duration: 2.2 + (idx % 3) * 0.4,
-                                            repeat: Infinity,
-                                            ease: "easeInOut",
-                                        }}
-                                        className="inline-block"
                                     >
-                                        {item.emoji}
-                                    </motion.span>
-                                </motion.div>
-                            );
-                        })}
+                                        <motion.span
+                                            animate={
+                                                !isRetracting
+                                                    ? {
+                                                          y: [-3, 3, -3],
+                                                          rotate: [-4, 4, -4],
+                                                      }
+                                                    : {}
+                                            }
+                                            transition={{
+                                                duration: 2.2 + (idx % 3) * 0.4,
+                                                repeat: Infinity,
+                                                ease: "easeInOut",
+                                            }}
+                                            className="inline-block"
+                                        >
+                                            {item.emoji}
+                                        </motion.span>
+                                    </motion.div>
+                                );
+                            })}
 
                         {/* Outer Glow Halo behind Logo */}
                         <div
