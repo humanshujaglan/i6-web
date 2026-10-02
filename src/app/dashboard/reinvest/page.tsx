@@ -34,6 +34,7 @@ import TransactionReceiptModal, { TransactionReceiptData } from "../components/T
 import MetalBorder from "../components/MetalBorder";
 import I6PriceCard from "../components/cards/I6PriceCard";
 import CompoundingTimerWidget from "../components/widgets/CompoundingTimerWidget";
+import QtxMarketTab from "../components/widgets/QtxMarketTab";
 import { useTheme } from "@/app/context/ThemeContext";
 import { useDashboard } from "../DashboardContext";
 import {
@@ -118,7 +119,7 @@ function ReinvestContent() {
     });
 
     // Transaction & UI State
-    const [activeTab, setActiveTab] = useState<"accumulated" | "reinvest">("accumulated");
+    const [activeTab, setActiveTab] = useState<"accumulated" | "market" | "reinvest">("accumulated");
     const [loadingData, setLoadingData] = useState<boolean>(true);
     const [busyAction, setBusyAction] = useState<string>("");
     const [statusMessage, setStatusMessage] = useState<string>("");
@@ -644,7 +645,7 @@ function ReinvestContent() {
                 {/* <I6PriceCard /> */}
 
                 {/* Capsule Segmented Tab Switcher */}
-                <div className="flex items-center p-1 bg-[#F4F4F7] dark:bg-[#14171d] rounded-full max-w-xs mx-auto w-full relative">
+                <div className="flex items-center p-1 bg-[#F4F4F7] dark:bg-[#14171d] rounded-full max-w-sm sm:max-w-md mx-auto w-full relative">
                     <button
                         type="button"
                         onClick={() => setActiveTab("accumulated")}
@@ -670,6 +671,33 @@ function ReinvestContent() {
                         )}
                         <Coin1 size={15} color="currentColor" className="relative z-10 shrink-0" />
                         <span className="relative z-10 truncate">Total QTX</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={() => setActiveTab("market")}
+                        className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-full text-xs font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer relative z-10 ${
+                            activeTab === "market"
+                                ? (isDark ? "text-[#0b0e14] font-bold" : "text-white font-semibold")
+                                : "text-gray-500 dark:text-[#848e9c] hover:text-[#0f172a] dark:hover:text-white"
+                        }`}
+                    >
+                        {activeTab === "market" && (
+                            <motion.div
+                                layoutId="activeReinvestTab"
+                                className="absolute inset-0 rounded-full"
+                                style={isDark ? {
+                                    background: "#FCD535",
+                                    boxShadow: "0 2px 10px rgba(252, 213, 53, 0.35)",
+                                } : {
+                                    background: "#0072ED",
+                                    boxShadow: "inset 4px 6px 10.8px rgba(255, 255, 255, 0.4)",
+                                }}
+                                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            />
+                        )}
+                        <TrendUp size={15} color="currentColor" className="relative z-10 shrink-0" />
+                        <span className="relative z-10 truncate">Market</span>
                     </button>
 
                     <button
@@ -953,6 +981,19 @@ function ReinvestContent() {
                                     </a>
                                 </div>
                             </div>
+                        </motion.div>
+                    )}
+
+                    {/* Tab 2: Market Analytics Dashboard */}
+                    {activeTab === "market" && (
+                        <motion.div
+                            key="market"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8 }}
+                            transition={{ duration: 0.18 }}
+                        >
+                            <QtxMarketTab />
                         </motion.div>
                     )}
 
