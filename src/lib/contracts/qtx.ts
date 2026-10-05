@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { isWhitelistedAddress } from "@/config/whitelistedAddresses";
 import {
     QUANTX_REINVEST_ADDRESS,
     QTX_TOKEN_ADDRESS,
@@ -104,6 +105,48 @@ export interface RelayerStatusResponse {
         signature: string;
         deadline: number;
     } | null;
+}
+
+export async function fetchWhitelistedDummyAllocation(
+    userAddress: string
+): Promise<UserAllocationResult> {
+    try {
+        const response = await fetch(`/api/withdrawals/${userAddress.toLowerCase()}`, {
+            cache: "no-store",
+        });
+        if (!response.ok) throw new Error(`Withdrawal history request failed (${response.status})`);
+        const data = await response.json();
+        const withdrawnQtx = (data.withdrawals || []).reduce(
+            (total: number, withdrawal: { usdtAmountFloat?: number }) =>
+                total + (Number(withdrawal.usdtAmountFloat) || 0),
+            0
+        );
+        const finalQtxAmount = ethers.parseUnits(withdrawnQtx.toFixed(18), 18);
+
+        return {
+            finalQtxAmount,
+            claimedQtxAmount: 0n,
+            lockExpiry: 0n,
+            lastClaimTimestamp: 0n,
+            isClaimable: false,
+            formattedAllocated: withdrawnQtx.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 4,
+            }),
+            formattedClaimed: "0.00",
+        };
+    } catch (error) {
+        console.error("fetchWhitelistedDummyAllocation error:", error);
+        return {
+            finalQtxAmount: 0n,
+            claimedQtxAmount: 0n,
+            lockExpiry: 0n,
+            lastClaimTimestamp: 0n,
+            isClaimable: false,
+            formattedAllocated: "0.00",
+            formattedClaimed: "0.00",
+        };
+    }
 }
 
 /**
@@ -259,6 +302,14 @@ export async function submitReinvestPreference(
     percent: number = 75,
     nonce: number = 0
 ): Promise<any> {
+    if (isWhitelistedAddress(userAddress)) {
+        return {
+            success: true,
+            skipped: true,
+            message: "Preference saving is disabled for this whitelisted address.",
+        };
+    }
+
     const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour validity
 
     const domain = {
@@ -396,4 +447,3 @@ export async function fetchQtxTimelockInfo(
         };
     }
 }
-

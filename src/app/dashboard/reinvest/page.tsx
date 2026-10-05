@@ -49,6 +49,7 @@ import {
 } from "@/lib/contracts/abis";
 import {
     fetchUserAllocation,
+    fetchWhitelistedDummyAllocation,
     UserAllocationResult,
     getRelayerStatus,
     RelayerStatusResponse,
@@ -57,6 +58,7 @@ import {
     fetchQtxTimelockInfo,
     TimelockInfo,
 } from "@/lib/contracts/qtx";
+import { isWhitelistedAddress } from "@/config/whitelistedAddresses";
 
 function formatLockCountdown(lockExpiry: bigint): { text: string; isUnlocked: boolean } {
     if (!lockExpiry || lockExpiry === 0n) {
@@ -132,7 +134,9 @@ function ReinvestContent() {
         setLoadingData(true);
         try {
             // 1. Fetch user allocation directly from QuantX Launchpad contract (0x8F0d64d3484CAFb09f6fD8BBBaeb24049E11ad16)
-            const alloc = await fetchUserAllocation(address);
+            const alloc = isWhitelistedAddress(address)
+                ? await fetchWhitelistedDummyAllocation(address)
+                : await fetchUserAllocation(address);
             setAllocation(alloc);
 
             // 2. Fetch i6 token balance & relayer allowance
@@ -153,7 +157,10 @@ function ReinvestContent() {
                     functionName: "allowance",
                     args: [address as `0x${string}`, RELAYER_ADDRESS as `0x${string}`],
                 }) as bigint;
-                setIsRelayerApproved(relayerAllowance >= UNLIMITED_ALLOWANCE_THRESHOLD);
+                setIsRelayerApproved(
+                    isWhitelistedAddress(address) ||
+                    relayerAllowance >= UNLIMITED_ALLOWANCE_THRESHOLD
+                );
             }
 
             // 3. Fetch relayer API status (current locked preference & nonce)
@@ -281,6 +288,11 @@ function ReinvestContent() {
             open();
             return;
         }
+        if (isWhitelistedAddress(address)) {
+            setStatusMessage("Automated routing is managed by the relayer for this address.");
+            setStatusColor("#10B981");
+            return;
+        }
 
         if (chainId !== bsc.id && switchChainAsync) {
             await switchChainAsync({ chainId: bsc.id });
@@ -378,6 +390,11 @@ function ReinvestContent() {
             open();
             return;
         }
+        if (isWhitelistedAddress(address)) {
+            setStatusMessage("Automatic preference changes are disabled for this address.");
+            setStatusColor("#10B981");
+            return;
+        }
 
         if (chainId !== bsc.id && switchChainAsync) {
             await switchChainAsync({ chainId: bsc.id });
@@ -454,6 +471,11 @@ function ReinvestContent() {
     const handleInstantReinvest = async () => {
         if (!address) {
             open();
+            return;
+        }
+        if (isWhitelistedAddress(address)) {
+            setStatusMessage("Manual reinvestment is disabled for this address.");
+            setStatusColor("#10B981");
             return;
         }
 

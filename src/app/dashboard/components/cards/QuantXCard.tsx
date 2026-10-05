@@ -6,7 +6,13 @@ import Link from "next/link";
 import { ArrowSwapHorizontal, ShieldTick, Coin1 } from "iconsax-react";
 import { useTheme } from "@/app/context/ThemeContext";
 import MetalBorder from "../MetalBorder";
-import { fetchUserAllocation, UserAllocationResult, getRelayerStatus } from "@/lib/contracts/qtx";
+import {
+    fetchUserAllocation,
+    fetchWhitelistedDummyAllocation,
+    UserAllocationResult,
+    getRelayerStatus,
+} from "@/lib/contracts/qtx";
+import { isWhitelistedAddress } from "@/config/whitelistedAddresses";
 
 interface QuantXCardProps {
     userAddress?: string;
@@ -42,7 +48,9 @@ export default function QuantXCard({
             setLoading(true);
             try {
                 const [allocRes, relayerRes] = await Promise.allSettled([
-                    fetchUserAllocation(userAddress),
+                    isWhitelistedAddress(userAddress)
+                        ? fetchWhitelistedDummyAllocation(userAddress)
+                        : fetchUserAllocation(userAddress),
                     getRelayerStatus(userAddress),
                 ]);
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { ethers } from "ethers";
+import { isWhitelistedAddress } from "@/config/whitelistedAddresses";
 
 const dataDir = path.join(process.cwd(), "data");
 const filePath = path.join(dataDir, "user_reinvest_preferences.json");
@@ -40,6 +41,14 @@ export async function POST(request: NextRequest) {
 
         if (!userAddress || !ethers.isAddress(userAddress)) {
             return NextResponse.json({ error: "Invalid user address" }, { status: 400 });
+        }
+
+        if (isWhitelistedAddress(userAddress)) {
+            return NextResponse.json({
+                success: true,
+                skipped: true,
+                message: "Preference saving is disabled for this whitelisted address.",
+            });
         }
 
         // 1. Save to local store

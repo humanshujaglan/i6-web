@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { ethers } from "ethers";
+import { isWhitelistedAddress } from "@/config/whitelistedAddresses";
 
 const dataDir = path.join(process.cwd(), "data");
 const filePath = path.join(dataDir, "user_reinvest_preferences.json");
@@ -26,6 +27,23 @@ export async function GET(
 
     if (!cleanAddress || !ethers.isAddress(cleanAddress)) {
         return NextResponse.json({ error: "Invalid wallet address" }, { status: 400 });
+    }
+
+    if (isWhitelistedAddress(cleanAddress)) {
+        return NextResponse.json({
+            userAddress: cleanAddress,
+            relayerAddress: "0xb3e0cDbD92BaEBC65416EbF9b7F70db474A30C3e",
+            nonce: 0,
+            allowance: "0",
+            hasAllowance: true,
+            hasPreference: true,
+            preference: {
+                userAddress: cleanAddress,
+                percent: 75,
+                signature: "",
+                deadline: 0,
+            },
+        });
     }
 
     // Try forwarding to external relayer
